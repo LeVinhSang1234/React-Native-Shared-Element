@@ -32,6 +32,11 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
         view.setPaused(value)
     }
 
+    @ReactProp(name = "muted", defaultBoolean = false)
+    fun setMuted(view: RCTVideoView, value: Boolean) {
+        view.setMuted(value)
+    }
+
     @ReactProp(name = "volume")
     fun setVolume(view: RCTVideoView, value: Double) = view.setVolume(value)
 
@@ -40,6 +45,27 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     @ReactProp(name = "resizeMode")
     fun setResizeMode(view: RCTVideoView, value: String?) = view.setResizeMode(value)
 
+    @ReactProp(name = "enableProgress")
+    fun setEnableProgress(view: RCTVideoView, value: Boolean) {
+        view.setEnableProgress(value)
+    }
+
+    @ReactProp(name = "progressInterval")
+    fun setProgressInterval(view: RCTVideoView, ms: Double) {
+        view.setProgressInterval(ms)
+    }
+
+    @ReactProp(name = "enableOnLoad")
+    fun setEnableOnLoad(view: RCTVideoView, value: Boolean) {
+        view.setEnableOnLoad(value)
+    }
+
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> =
-            MapBuilder.of("onLoad", MapBuilder.of("registrationName", "onLoad"))
+        mutableMapOf(
+            "onLoadStart" to mutableMapOf("registrationName" to "onLoadStart"),
+            "onLoad" to mutableMapOf("registrationName" to "onLoad"),
+            "onProgress" to mutableMapOf("registrationName" to "onProgress"),
+            "onError" to mutableMapOf("registrationName" to "onError"),
+            "onBuffering" to mutableMapOf("registrationName" to "onBuffering")
+        )
 }

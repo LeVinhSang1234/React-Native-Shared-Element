@@ -55,13 +55,15 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       nativeRef.current?.measure(callback);
     },
     pause() {
-      if (nativeRef.current) Commands.setPaused(nativeRef.current, true);
+      if (nativeRef.current) Commands.setPausedCommand(nativeRef.current, true);
     },
     resume() {
-      if (nativeRef.current) Commands.setPaused(nativeRef.current, false);
+      if (nativeRef.current) {
+        Commands.setPausedCommand(nativeRef.current, false);
+      }
     },
     seek(seek: number) {
-      if (nativeRef.current) Commands.setSeek(nativeRef.current, seek);
+      if (nativeRef.current) Commands.setSeekCommand(nativeRef.current, seek);
     },
   }));
 
