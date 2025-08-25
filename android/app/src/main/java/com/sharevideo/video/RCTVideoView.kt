@@ -106,6 +106,10 @@ class RCTVideoView : FrameLayout {
     // Tránh emit onLoadStart nhiều lần cho cùng media item
     private var didEmitLoadStartForCurrentItem = false
 
+    private var shareTagElement: String? = null
+
+    private var headerHeight: Float = 0f
+
     // Tiện để lấy ReactContext nếu view được tạo từ ThemedReactContext
     private val trc: ThemedReactContext?
         get() = context as? ThemedReactContext
@@ -254,6 +258,7 @@ class RCTVideoView : FrameLayout {
         trc?.removeLifecycleEventListener(lifecycle)
         stopProgress()
         stopOnLoad()
+        RCTVideoTag.removeView(this, shareTagElement)
         playerView.player = null
         player?.release()
         player = null
@@ -359,6 +364,10 @@ class RCTVideoView : FrameLayout {
         } else {
             stopOnLoad()
         }
+    }
+
+    fun setHeaderHeight(value: Float) {
+        headerHeight = value
     }
 
     // ======== Định nghĩa các RN Event ========
@@ -532,6 +541,19 @@ class RCTVideoView : FrameLayout {
     // Dừng tick onProgress
     private fun stopProgress() {
         removeCallbacks(progressTick)
+    }
+
+    // Setter được ViewManager gọi khi nhận prop từ RN
+    fun setShareTagElement(tag: String?) {
+        val newTag = tag?.trim()?.takeIf { it.isNotEmpty() }
+        val oldTag = shareTagElement
+        if (oldTag != null && oldTag != newTag) {
+            RCTVideoTag.removeView(this, oldTag)
+        }
+        shareTagElement = newTag
+        if (newTag != null) {
+            RCTVideoTag.registerView(this, newTag)
+        }
     }
 
     // Runnable gửi onLoad theo interval (riêng với progress)
@@ -873,5 +895,33 @@ class RCTVideoView : FrameLayout {
         } else {
             base
         }
+    }
+
+    // Command
+    fun initializeFromCommand() {
+        println("initializeFromCommand")
+        if(shareTagElement != null) shareElement();
+    }
+
+    fun setSeekFromCommand(seekSec: Double) {
+        val posMs = (seekSec * 1000.0).toLong().coerceAtLeast(0L)
+        player?.seekTo(posMs) ?: run { pendingSeekMs = posMs }
+    }
+
+    fun setPausedFromCommand(paused: Boolean) {
+        setPaused(paused)
+    }
+
+    fun setVolumeFromCommand(volume: Double) {
+        val v = volume.coerceIn(0.0, 1.0)
+        player?.let { applyVolume(it, v.toFloat()) } ?: run { pendingVolume = v.toFloat() }
+    }
+
+    // Share element
+    private fun shareElement() {
+        val otherView = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
+        println("shareTagElement")
+        println(shareTagElement)
+        println(otherView)
     }
 }

@@ -1,5 +1,6 @@
 package com.sharevideo.video
 
+import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -58,6 +59,36 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     @ReactProp(name = "enableOnLoad")
     fun setEnableOnLoad(view: RCTVideoView, value: Boolean) {
         view.setEnableOnLoad(value)
+    }
+
+    @ReactProp(name = "shareTagElement")
+    fun setShareTagElement(view: RCTVideoView, value: String?) {
+        view.setShareTagElement(value) // sẽ auto register/unregister trong setter
+    }
+
+    @ReactProp(name = "headerHeight", defaultFloat = 0f)
+    fun setHeaderHeight(view: RCTVideoView, value: Float) {
+        view.setHeaderHeight(value)
+    }
+
+    override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {
+        println("commandId")
+        println(commandId)
+        when (commandId) {
+            "initialize" -> view.initializeFromCommand()
+            "setSeekCommand" -> {
+                val sec = args?.getDouble(0) ?: 0.0
+                view.setSeekFromCommand(sec)
+            }
+            "setPausedCommand" -> {
+                val paused = args?.getBoolean(0) ?: false
+                view.setPausedFromCommand(paused)
+            }
+            "setVolumeCommand" -> {
+                val vol = args?.getDouble(0) ?: 1.0
+                view.setVolumeFromCommand(vol)
+            }
+        }
     }
 
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> =
