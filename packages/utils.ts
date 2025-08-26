@@ -5,6 +5,7 @@ const sourceCache = new Map<string, string>();
 export const preloadVideoSource = (
   source: string | { uri: string } | number,
 ): string => {
+  if (!source) return '';
   return resolveSource(source);
 };
 

@@ -33,7 +33,7 @@ export interface VideoProps
     'resizeMode' | 'source' | 'enableProgress' | 'enableOnLoad' | 'headerHeight'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
-  source: string | { uri: string } | number;
+  source?: string | { uri: string } | number;
 }
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
@@ -71,7 +71,7 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
     if (nativeRef.current) Commands.initialize(nativeRef.current);
   }, []);
 
-  const _source = useMemo(() => preloadVideoSource(source), [source]);
+  const _source = useMemo(() => preloadVideoSource(source ?? ''), [source]);
 
   return (
     <VideoNativeComponent

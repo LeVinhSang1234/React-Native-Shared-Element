@@ -1,13 +1,8 @@
-package com.sharevideo.video
+package com.sharevideo.helpers
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import java.io.File
-import java.net.InetAddress
-import java.net.Proxy
-import java.net.UnknownHostException
-import java.util.concurrent.TimeUnit
 import okhttp3.Cache
 import okhttp3.CacheControl
 import okhttp3.Dns
@@ -16,18 +11,23 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.dnsoverhttps.DnsOverHttps
 import okhttp3.logging.HttpLoggingInterceptor
+import java.io.File
+import java.net.InetAddress
+import java.net.Proxy
+import java.net.UnknownHostException
+import java.util.concurrent.TimeUnit
 
 object HttpStack {
     data class Options(
-            val cacheSizeBytes: Long = 4_000L * 1024 * 1024, // 4GB
+        val cacheSizeBytes: Long = 4_000L * 1024 * 1024, // 4GB
 //            val cacheSizeBytes: Long = -1L, // UN LIMIT
-            val useDoh: Boolean = true, // bật DoH fallback
-            val dohUrl: String = "https://1.1.1.1/dns-query", // Cloudflare DoH
-            val dohBootstrap: List<InetAddress> =
+        val useDoh: Boolean = true, // bật DoH fallback
+        val dohUrl: String = "https://1.1.1.1/dns-query", // Cloudflare DoH
+        val dohBootstrap: List<InetAddress> =
                     listOf(InetAddress.getByName("1.1.1.1"), InetAddress.getByName("1.0.0.1")),
-            val connectTimeoutSec: Long = 15,
-            val readTimeoutSec: Long = 30,
-            val proxy: Proxy? = null // nếu cần đặt proxy tay
+        val connectTimeoutSec: Long = 15,
+        val readTimeoutSec: Long = 30,
+        val proxy: Proxy? = null // nếu cần đặt proxy tay
     )
 
     @Volatile private var client: OkHttpClient? = null
@@ -89,7 +89,7 @@ object HttpStack {
     private class SystemThenDohDns(private val doh: Dns) : Dns {
         override fun lookup(hostname: String): List<InetAddress> {
             return try {
-                Dns.SYSTEM.lookup(hostname)
+                Dns.Companion.SYSTEM.lookup(hostname)
             } catch (_: UnknownHostException) {
                 doh.lookup(hostname)
             }
@@ -99,7 +99,7 @@ object HttpStack {
     private fun offlineCacheInterceptor(ctx: Context): Interceptor = Interceptor { chain ->
         var req = chain.request()
         if (!hasNetwork(ctx)) {
-            req = req.newBuilder().cacheControl(CacheControl.FORCE_CACHE).build()
+            req = req.newBuilder().cacheControl(CacheControl.Companion.FORCE_CACHE).build()
         }
         chain.proceed(req)
     }

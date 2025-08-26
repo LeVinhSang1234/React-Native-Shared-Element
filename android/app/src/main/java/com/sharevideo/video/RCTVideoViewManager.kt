@@ -14,7 +14,7 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
 
     override fun onDropViewInstance(view: RCTVideoView) {
         super.onDropViewInstance(view)
-        view.cleanup()
+        view.dealloc()
     }
 
     @ReactProp(name = "source")
@@ -69,6 +69,10 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     fun setHeaderHeight(view: RCTVideoView, value: Float) {
         view.setHeaderHeight(value)
     }
+    @ReactProp(name = "sharingAnimatedDuration", defaultFloat = 0f)
+    fun setSharingAnimatedDuration(view: RCTVideoView, value: Float) {
+        view.setSharingAnimatedDuration(value)
+    }
 
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {
         println("commandId")
@@ -91,11 +95,11 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     }
 
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> =
-        mutableMapOf(
-            "onLoadStart" to mutableMapOf("registrationName" to "onLoadStart"),
-            "onLoad" to mutableMapOf("registrationName" to "onLoad"),
-            "onProgress" to mutableMapOf("registrationName" to "onProgress"),
-            "onError" to mutableMapOf("registrationName" to "onError"),
-            "onBuffering" to mutableMapOf("registrationName" to "onBuffering")
-        )
+            mutableMapOf(
+                    "onLoadStart" to mutableMapOf("registrationName" to "onLoadStart"),
+                    "onLoad" to mutableMapOf("registrationName" to "onLoad"),
+                    "onProgress" to mutableMapOf("registrationName" to "onProgress"),
+                    "onError" to mutableMapOf("registrationName" to "onError"),
+                    "onBuffering" to mutableMapOf("registrationName" to "onBuffering")
+            )
 }

@@ -299,6 +299,7 @@ static NSString * const kResizeModeCenter = @"center";
   }
   [_player setMuted:_muted];
   if(!_paused) [_player play];
+  [otherPlayer setMuted:YES];
 }
 
 #pragma mark - LISTEN OBSERVE VALUE

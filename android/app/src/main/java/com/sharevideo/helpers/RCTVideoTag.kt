@@ -1,6 +1,6 @@
-// Đặt package khớp với RCTVideoView.kt
-package com.sharevideo.video
+package com.sharevideo.helpers
 
+import com.sharevideo.video.RCTVideoView
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
@@ -11,7 +11,8 @@ import java.util.concurrent.ConcurrentHashMap
  * - getOtherViewForTag(view, tag): trả về view khác cùng tag (ưu tiên view đăng ký sau)
  */
 object RCTVideoTag {
-    private val tagToViewsMap = ConcurrentHashMap<String, MutableList<WeakReference<RCTVideoView>>>()
+    private val tagToViewsMap =
+        ConcurrentHashMap<String, MutableList<WeakReference<RCTVideoView>>>()
 
     @JvmStatic
     fun registerView(view: RCTVideoView?, tag: String?) {
@@ -47,4 +48,5 @@ object RCTVideoTag {
             return null
         }
     }
+
 }
