@@ -588,7 +588,7 @@ class RCTVideoView : FrameLayout {
         otherView.alpha = 0f
 
         postDelayed({
-            val toRect = rectForShare(this, this@RCTVideoView.headerHeight.toInt())
+            val toRect = rectForShare(this)
             cacheRect = toRect
             alpha = 0f
             otherView.playerView.player = null
