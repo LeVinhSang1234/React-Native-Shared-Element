@@ -80,7 +80,7 @@ using namespace facebook::react;
     vc.rn_onDidPop = ^{
       __strong __typeof__(wSelf) self = wSelf;
       if (!self) return;
-      NSLog(@"[RNBackLife] rn_onDidPop %@", wSelf.shareTagElement);
+      // NSLog(@"[RNBackLife] rn_onDidPop %@", wSelf.shareTagElement);
       [self handleDidPop];
     };
     
@@ -125,7 +125,7 @@ using namespace facebook::react;
       if(!wSelf.isBlur) {
         wSelf.isBlur = YES;
         wSelf.isFocused = NO;
-        NSLog(@"[RNBackLife] rn_onDidDisappear %@ %f", wSelf.shareTagElement, wSelf.videoOverlay.sharingAnimatedDuration);
+        // NSLog(@"[RNBackLife] rn_onDidDisappear %@ %f", wSelf.shareTagElement, wSelf.videoOverlay.sharingAnimatedDuration);
         if (wSelf.nav && wSelf.hasGestureTarget) {
           [wSelf.nav.interactivePopGestureRecognizer removeTarget:wSelf action:@selector(_handlePopGesture:)];
           wSelf.hasGestureTarget = NO;
@@ -155,7 +155,7 @@ using namespace facebook::react;
       if(!wSelf.isFocused) {
         wSelf.isFocused = YES;
         wSelf.isBlur = NO;
-        NSLog(@"[RNBackLife] rn_onDidAppear %@", wSelf.shareTagElement);
+        // NSLog(@"[RNBackLife] rn_onDidAppear %@", wSelf.shareTagElement);
         // swipe-back %
         UIGestureRecognizer *g = self.nav.interactivePopGestureRecognizer;
         if (g && !self.hasGestureTarget) {
@@ -173,7 +173,7 @@ using namespace facebook::react;
                                                  name:@"RNWillPopViewControllerNotification"
                                                object:self.nav];
   } else if(!_isFocused){
-    NSLog(@"_detachFromNavAndVC %f", _videoOverlay.sharingAnimatedDuration);
+    // NSLog(@"_detachFromNavAndVC %f", _videoOverlay.sharingAnimatedDuration);
     [[RNEarlyRegistry shared] removeView:wSelf];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [wSelf _detachFromNavAndVC];
@@ -407,7 +407,7 @@ using namespace facebook::react;
 - (void)handleWillPop
 {
   if(_backGestureActive || _sharing) return;
-  NSLog(@"[RNBackLife] rn_onWillPop %f", self.videoOverlay.sharingAnimatedDuration);
+  // NSLog(@"[RNBackLife] rn_onWillPop %f", self.videoOverlay.sharingAnimatedDuration);
   self.layer.opacity = 0.f;
   [self shareElementWhenDealloc];
   [self beforeUnmount];
@@ -425,10 +425,10 @@ using namespace facebook::react;
 - (void)handleDidPop
 {
   if(_sharing) return;
-  NSLog(@"____ %@", _shareTagElement);
+  // NSLog(@"____ %@", _shareTagElement);
   RCTVideoView *otherView = [RCTVideoTag getOtherViewForTag:self withTag:_shareTagElement];
   if(otherView) {
-    NSLog(@"otherView %@",otherView);
+    // NSLog(@"otherView %@",otherView);
     [otherView.videoManager afterTargetShareElement:_videoManager.player isOtherPaused:_videoManager.paused];
   }
   [[RNEarlyRegistry shared] removeView:self];
@@ -467,7 +467,7 @@ using namespace facebook::react;
       break;
     }
     case UIGestureRecognizerStateEnded: {
-       NSLog(@"[RCTVideoView] gestureEnded at progress: %.2f%%", progress * 100);
+       // NSLog(@"[RCTVideoView] gestureEnded at progress: %.2f%%", progress * 100);
       _backGestureActive = false;
       dispatch_async(dispatch_get_main_queue(), ^{
         UIViewController *vc = [self nearestViewController];

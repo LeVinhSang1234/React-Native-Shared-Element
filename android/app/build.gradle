@@ -77,7 +77,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.sharevideo"
+    namespace "com.sharevideo.video"
     defaultConfig {
         applicationId "com.sharevideo"
         minSdkVersion rootProject.ext.minSdkVersion

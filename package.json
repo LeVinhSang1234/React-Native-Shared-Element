@@ -1,5 +1,5 @@
 {
-  "name": "@rn-video/share-element",
+  "name": "@rn-video/video-share-element",
   "version": "0.1.0",
   "description": "A custom React Native video component with shared element transitions",
   "main": "index.ts",
@@ -8,15 +8,15 @@
     "index.ts",
     "packages/",
     "natives/",
-    "react-native.config.js",
-    "ios/Video.podspec",
+    "rn-video-share-element.podspec",
     "ios/Video/",
     "android/app/src/main/java/com/sharevideo/video/",
     "android/app/src/main/java/com/sharevideo/helpers/",
-    "android/app/build.gradle"
+    "android/app/build.gradle",
+    "android/app/src/main/AndroidManifest.xml"
   ],
   "scripts": {
-    "prepare": "if [ -d ./node_modules/@react-navigation/core/lib/module ]; then cp ./packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js; fi"
+    "postinstall": "if [ -d ./node_modules/@react-navigation/core/lib/module ]; then cp ./packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js; fi"
   },
   "keywords": [
     "react-native",
@@ -39,7 +39,7 @@
     "type": "all",
     "jsSrcsDir": "natives",
     "android": {
-      "javaPackageName": "com.video"
+      "javaPackageName": "com.sharevideo.video"
     },
     "ios": {
       "componentProvider": {

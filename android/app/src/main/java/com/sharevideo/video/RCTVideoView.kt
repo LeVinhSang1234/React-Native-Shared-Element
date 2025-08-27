@@ -229,8 +229,7 @@ class RCTVideoView : FrameLayout {
         }
         if (videoW > 0 && videoH > 0) applyAspectNow()
         updatePlayState()
-        if (shareTagElement != null) shareElement()
-        else alpha = 1f
+        if (shareTagElement != null) shareElement() else alpha = 1f
     }
 
     override fun onDetachedFromWindow() {
@@ -555,9 +554,7 @@ class RCTVideoView : FrameLayout {
         val rect = RCTVideoLayoutUtils.computeChildRect(w, h, videoW, videoH, resizeModeStr)
         playerView.layout(rect.left, rect.top, rect.right, rect.bottom)
 
-        postDelayed({
-            cacheRect = rectForShare(this, 0)
-        }, 100)
+        postDelayed({ cacheRect = rectForShare(this, 0) }, 100)
     }
 
     // ===== Commands (optional mapping) =====
@@ -576,7 +573,7 @@ class RCTVideoView : FrameLayout {
     // ===== Share Element (Android version swap iOS) =====
     private fun shareElement() {
         val otherView = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
-        if(otherView == null) {
+        if (otherView == null) {
             alpha = 1f
             return
         }
@@ -587,54 +584,66 @@ class RCTVideoView : FrameLayout {
         val fromRect = rectForShare(otherView, 0)
         otherView.alpha = 0f
 
-        postDelayed({
-            val toRect = rectForShare(this)
-            cacheRect = toRect
-            alpha = 0f
-            otherView.playerView.player = null
-            val ov = overlay ?: RCTVideoOverlay(context).also { overlay = it }
+        postDelayed(
+                {
+                    val toRect = rectForShare(this)
+                    cacheRect = toRect
+                    alpha = 0f
+                    otherView.playerView.player = null
+                    val ov = overlay ?: RCTVideoOverlay(context).also { overlay = it }
 
-            val gravityAlias =
-                when (resizeModeStr.lowercase()) {
-                    "cover" -> "AVLayerVideoGravityResizeAspectFill"
-                    "fill", "stretch" -> "AVLayerVideoGravityResize"
-                    "center" -> "center"
-                    else -> "AVLayerVideoGravityResizeAspect"
-                }
-            val bgColor =
-                (otherView.background as? ColorDrawable)?.color ?: android.graphics.Color.BLACK
+                    val gravityAlias =
+                            when (resizeModeStr.lowercase()) {
+                                "cover" -> "AVLayerVideoGravityResizeAspectFill"
+                                "fill", "stretch" -> "AVLayerVideoGravityResize"
+                                "center" -> "center"
+                                else -> "AVLayerVideoGravityResizeAspect"
+                            }
+                    val bgColor =
+                            (otherView.background as? ColorDrawable)?.color
+                                    ?: android.graphics.Color.BLACK
 
-            ov.applySharingAnimatedDuration(otherView.sharingAnimatedDuration)
-            ov.applyAVLayerVideoGravity(gravityAlias)
-            ov.moveToOverlay(
-                fromFrame = fromRect,
-                targetFrame = toRect,
-                player = movingPlayer,
-                aVLayerVideoGravity = gravityAlias,
-                bgColor = bgColor,
-                onTarget = {
-                    playerView.player = movingPlayer
-                    player = movingPlayer
-                    isSharedPlayer = true
-                    applyLoop(movingPlayer)
-                    applyMuted(movingPlayer)
-                    applyAspectNow()
-                    setPaused(externallyPaused)
-                    alpha = 1f
+                    ov.applySharingAnimatedDuration(otherView.sharingAnimatedDuration)
+                    ov.applyAVLayerVideoGravity(gravityAlias)
+                    ov.moveToOverlay(
+                            fromFrame = fromRect,
+                            targetFrame = toRect,
+                            player = movingPlayer,
+                            aVLayerVideoGravity = gravityAlias,
+                            bgColor = bgColor,
+                            onTarget = {
+                                playerView.player = movingPlayer
+                                player = movingPlayer
+                                isSharedPlayer = true
+                                applyLoop(movingPlayer)
+                                applyMuted(movingPlayer)
+                                applyAspectNow()
+                                setPaused(externallyPaused)
+                                alpha = 1f
+                            },
+                            onCompleted = {
+                                overlay?.unmount()
+                                overlay = null
+                            }
+                    )
                 },
-                onCompleted = {
-                    overlay?.unmount()
-                    overlay = null
-                }
-            )
-        }, 20)
+                20
+        )
     }
 
     fun revertShareElement() {
-        val other = RCTVideoTag.getOtherViewForTag(this, shareTagElement) ?: run {
-            cleanup(); return
-        }
-        val movingPlayer = player ?: run { cleanup(); return }
+        val other =
+                RCTVideoTag.getOtherViewForTag(this, shareTagElement)
+                        ?: run {
+                            cleanup()
+                            return
+                        }
+        val movingPlayer =
+                player
+                        ?: run {
+                            cleanup()
+                            return
+                        }
         var fromRect = rectForShare(this, 0)
         alpha = 0f
 
@@ -643,43 +652,44 @@ class RCTVideoView : FrameLayout {
         }
 
         val ov = other.overlay ?: RCTVideoOverlay(other.context).also { other.overlay = it }
-        val gravityAlias = when (resizeModeStr.lowercase()) {
-            "cover" -> "AVLayerVideoGravityResizeAspectFill"
-            "fill", "stretch" -> "AVLayerVideoGravityResize"
-            "center" -> "center"
-            else -> "AVLayerVideoGravityResizeAspect"
-        }
-        val bgColor = (other.background as? ColorDrawable)?.color ?: android.graphics.Color.BLACK
-        println("fromRect $fromRect")
-
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        handler.postDelayed({
-            val toRect = other.rectForShare(other, 0)
-            println("toRect $toRect")
-
-            ov.applySharingAnimatedDuration(other.sharingAnimatedDuration)
-            ov.applyAVLayerVideoGravity(gravityAlias)
-
-            ov.moveToOverlay(
-                fromFrame = fromRect,
-                targetFrame = toRect,
-                player = movingPlayer,
-                aVLayerVideoGravity = gravityAlias,
-                bgColor = bgColor,
-                onTarget = {
-                    other.playerView.player = movingPlayer
-                    other.setPaused(other.externallyPaused)
-                    other.applyLoop(other.player!!)
-                    other.applyMuted(other.player!!)
-                    other.alpha = 1f
-                },
-                onCompleted = {
-                    other.overlay?.unmount()
-                    other.overlay = null
-                    cleanup()
+        val gravityAlias =
+                when (resizeModeStr.lowercase()) {
+                    "cover" -> "AVLayerVideoGravityResizeAspectFill"
+                    "fill", "stretch" -> "AVLayerVideoGravityResize"
+                    "center" -> "center"
+                    else -> "AVLayerVideoGravityResizeAspect"
                 }
-            )
-        }, 10)
+        val bgColor = (other.background as? ColorDrawable)?.color ?: android.graphics.Color.BLACK
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        handler.postDelayed(
+                {
+                    val toRect = other.rectForShare(other, 0)
+
+                    ov.applySharingAnimatedDuration(other.sharingAnimatedDuration)
+                    ov.applyAVLayerVideoGravity(gravityAlias)
+
+                    ov.moveToOverlay(
+                            fromFrame = fromRect,
+                            targetFrame = toRect,
+                            player = movingPlayer,
+                            aVLayerVideoGravity = gravityAlias,
+                            bgColor = bgColor,
+                            onTarget = {
+                                other.playerView.player = movingPlayer
+                                other.setPaused(other.externallyPaused)
+                                other.applyLoop(other.player!!)
+                                other.applyMuted(other.player!!)
+                                other.alpha = 1f
+                            },
+                            onCompleted = {
+                                other.overlay?.unmount()
+                                other.overlay = null
+                                cleanup()
+                            }
+                    )
+                },
+                10
+        )
     }
 
     private fun findRoot(): ViewGroup? {

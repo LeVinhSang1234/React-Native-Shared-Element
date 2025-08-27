@@ -1,4 +1,4 @@
-import Video from 'packages/Video';
+import Video from './packages/Video';
 import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 

@@ -1,13 +1,13 @@
-# @rn-video/share-element
+# @rn-video/video-share-element
 
 A custom React Native video component with shared element transitions support.
 
 ## Installation
 
 ```bash
-npm install @rn-video/share-element
+npm install @rn-video/video-share-element
 # or
-yarn add @rn-video/share-element
+yarn add @rn-video/video-share-element
 ```
 
 ### iOS
@@ -25,7 +25,7 @@ For Android, the native code will be automatically linked through autolinking.
 ## Usage
 
 ```tsx
-import Video from '@rn-video/share-element';
+import Video from '@rn-video/video-share-element';
 
 <Video
   source={{ uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }}
@@ -35,7 +35,6 @@ import Video from '@rn-video/share-element';
   volume={0.8}
   resizeMode="cover"
   progressInterval={500}
-  enableProgress
   onProgress={data => console.log(data)}
   onEnd={() => console.log('Video ended')}
   sharingAnimatedDuration={500}
@@ -103,54 +102,8 @@ videoRef.current?.measure((data) => {
 ## Requirements
 
 - React >= 18.0.0
-- React Native >= 0.70.0
+- React Native >= 0.76.0
 - iOS >= 13.0
-
-## Development
-
-### Building
-
-```bash
-# Build TypeScript
-npm run build
-
-# Lint code
-npm run lint
-
-# Run tests
-npm run test
-```
-
-### iOS Development
-
-```bash
-# Install CocoaPods dependencies
-cd ios && pod install
-
-# Open Xcode workspace
-open ios/ShareVideo.xcworkspace
-```
-
-### Android Development
-
-```bash
-# Run on Android device/emulator
-npm run android
-
-# Build debug APK
-cd android && ./gradlew assembleDebug
-
-# Build release APK
-cd android && ./gradlew assembleRelease
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 

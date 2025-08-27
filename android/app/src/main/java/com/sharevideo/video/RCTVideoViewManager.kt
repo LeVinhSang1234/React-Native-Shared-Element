@@ -75,8 +75,6 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     }
 
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {
-        println("commandId")
-        println(commandId)
         when (commandId) {
             "initialize" -> view.initializeFromCommand()
             "setSeekCommand" -> {

@@ -1,7 +1,7 @@
 import VideoNativeComponent, {
   Commands,
   VideoNativeProps,
-} from 'natives/VideoNativeComponent';
+} from '../natives/VideoNativeComponent';
 import {
   forwardRef,
   memo,

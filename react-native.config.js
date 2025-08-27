@@ -5,7 +5,9 @@ module.exports = {
         packageName: 'com.sharevideo.video.RCTVideoPackage',
         packageClassName: 'RCTVideoPackage',
       },
-      ios: {},
+      ios: {
+        podspecPath: 'rn-video-share-element.podspec',
+      },
     },
   },
 };
