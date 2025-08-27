@@ -1,0 +1,32 @@
+# Development files
+__tests__/
+.eslintrc.js
+.prettierrc.js
+.watchmanconfig
+babel.config.js
+jest.config.js
+metro.config.js
+tsconfig.json
+
+# Build artifacts
+android/build/
+ios/build/
+ios/Pods/
+
+# Development dependencies
+node_modules/
+.yarn/
+.bundle/
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+*.log
+
+# App-specific files
+App.tsx
+index.js
+app.json

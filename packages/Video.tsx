@@ -25,6 +25,9 @@ type TNativeRef = React.ComponentRef<typeof VideoNativeComponent>;
 
 export interface VideoRef {
   measure: (callback: MeasureOnSuccessCallback) => void;
+  pause: () => void;
+  resume: () => void;
+  seek: (seek: number) => void;
 }
 
 export interface VideoProps
