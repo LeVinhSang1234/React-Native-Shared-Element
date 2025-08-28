@@ -8,12 +8,12 @@ Pod::Spec.new do |s|
   s.version      = '0.1.1'
   s.summary      = 'A custom video view for iOS, using KTVHTTPCache.'
   s.description  = 'Custom iOS video view with KTVHTTPCache and shared element support.'
-  s.homepage     = 'https://github.com/sanglv/react-native-video'
+  s.homepage     = 'https://github.com/LeVinhSang1234/React-Native-Video/tree/share-video'
   s.license      = { :type => 'MIT', :file => 'LICENSE' }
-  s.author       = { 'Sang Le' => 'sanglv@email.com' }
+  s.author       = { 'Sang Le' => 'lsang2884@email.com' }
 
   s.platforms    = { :ios => "13.0" }
-  s.source       = { :git => "https://github.com/sanglv/react-native-video.git", :tag => "v#{s.version}" }
+  s.source       = { :git => "https://github.com/LeVinhSang1234/React-Native-Video.git", :tag => "v#{s.version}" }
   s.requires_arc = true
   s.swift_version = "5.0"
 
