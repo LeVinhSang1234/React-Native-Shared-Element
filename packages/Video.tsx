@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import VideoNativeComponent, {
   Commands,
   VideoNativeProps,
@@ -49,7 +50,10 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
     ...p
   } = props;
 
-  const headerHeight = useHeaderHeight();
+  let headerHeight: number = 0;
+  try {
+    headerHeight = useHeaderHeight();
+  } catch {}
 
   const nativeRef = useRef<TNativeRef>(null);
 

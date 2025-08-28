@@ -34,13 +34,15 @@ using namespace facebook::react;
     _videoManager = [[RCTVideoManager alloc] init];
     _videoOverlay = [[RCTVideoOverlay alloc] init];
     [UINavigationController rn_enablePopHookOnce];
+    self.hidden = YES;
   }
-  return  self;
+  return self;
 }
 
 - (void) initialize {
   [self createPlayerLayerIfNeeded];
   if(_shareTagElement) [self shareElement];
+  else self.hidden = NO;
 }
 
 -(void)updateEventEmitter:(const facebook::react::EventEmitter::Shared &)eventEmitter
@@ -197,6 +199,7 @@ using namespace facebook::react;
       otherView.hidden = NO;
       [otherView.videoManager afterTargetShareElement:_videoManager.player isOtherPaused:_videoManager.paused];
     }
+    if(_shareTagElement) self.hidden = YES;
     [self beforeUnmount];
     [self unmount];
   }
@@ -333,7 +336,7 @@ using namespace facebook::react;
       [otherView.videoManager afterShareElementComplete];
       [otherView createPlayerLayerIfNeeded];
     }];
-  }
+  } else self.hidden = NO;
 }
 
 - (void)shareElementWhenDealloc {
@@ -407,7 +410,7 @@ using namespace facebook::react;
 - (void)handleWillPop
 {
   if(_backGestureActive || _sharing) return;
-  // NSLog(@"[RNBackLife] rn_onWillPop %f", self.videoOverlay.sharingAnimatedDuration);
+  NSLog(@"[RNBackLife] rn_onWillPop %f", self.videoOverlay.sharingAnimatedDuration);
   self.layer.opacity = 0.f;
   [self shareElementWhenDealloc];
   [self beforeUnmount];
@@ -419,7 +422,7 @@ using namespace facebook::react;
   self.layer.opacity = 0.f;
   [self shareElementWhenDealloc];
   [self beforeUnmount];
-  // NSLog(@"Call thủ công từ react native")
+  NSLog(@"Call thủ công từ react native");
 }
 
 - (void)handleDidPop
@@ -435,7 +438,7 @@ using namespace facebook::react;
   [self _detachFromNavAndVC];
   [self beforeUnmount];
   [self unmount];
-  // NSLog(@"[RCTVideoView] didPop (nguồn: VC đã rời stack hoặc dismiss hoàn tất)");
+   NSLog(@"[RCTVideoView] didPop (nguồn: VC đã rời stack hoặc dismiss hoàn tất)");
 }
 
 - (void)_handlePopGesture:(UIGestureRecognizer *)gr
@@ -473,10 +476,10 @@ using namespace facebook::react;
         UIViewController *vc = [self nearestViewController];
         BOOL popped = self.nav && ![self.nav.viewControllers containsObject:vc];
         if (popped) {
-           NSLog(@"[RCTVideoView] didPop after swipe-back %@", self.shareTagElement);
+           //NSLog(@"[RCTVideoView] didPop after swipe-back %@", self.shareTagElement);
 //          [self handleDidPop];
         } else {
-           NSLog(@"[RCTVideoView] swipe-back not completed (cancelled) %@", self.shareTagElement);
+           //NSLog(@"[RCTVideoView] swipe-back not completed (cancelled) %@", self.shareTagElement);
         }
       });
       break;
