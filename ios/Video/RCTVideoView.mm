@@ -1,487 +1,528 @@
 //
-//  RCTVideo.m
+//  RCTVideoView.m
 //  ShareVideo
 //
-//  Created by Sang Le vinh on 8/19/25.
-//
+
 #import "RCTVideoView.h"
+#import "RCTVideoManager.h"
+#import "RCTVideoOverlay.h"
+#import "RCTVideoRouteRegistry.h"
+#import "RCTVideoHelper.h"
+
 #import <react/renderer/components/Video/Props.h>
 #import <react/renderer/components/Video/ComponentDescriptors.h>
+
 #import "UIView+NearestVC.h"
+#import "UIView+RNSScreenCheck.h"
 #import "UIViewController+RNBackLife.h"
 #import "UINavigationController+RNPopHook.h"
 #import "RNEarlyRegistry.h"
 
+#ifndef RN_WEAKIFY
+#define RN_WEAKIFY(var) __weak __typeof__(var) weak_##var = (var);
+#endif
+#ifndef RN_STRONGIFY
+#define RN_STRONGIFY(var) __strong __typeof__(var) var = weak_##var; if (!(var)) return;
+#endif
+
+typedef NS_ENUM(NSInteger, RCTVideoTransitionDirection) {
+  RCTVideoTransitionDirectionForward,
+  RCTVideoTransitionDirectionBackward
+};
+
 using namespace facebook::react;
 
 @interface RCTVideoView ()
-
-@property (nonatomic, weak) UINavigationController *nav;
+@property (nonatomic, weak)   UINavigationController *nav;
 @property (nonatomic, assign) BOOL hasGestureTarget;
 @property (nonatomic, assign) BOOL backGestureActive;
 @property (nonatomic, assign) BOOL isFocused;
 @property (nonatomic, assign) BOOL isBlur;
 
+@property (nonatomic, strong) UIImageView *posterView;
+@property (nonatomic, strong, nullable) RCTVideoView *otherView;
 
+@property (nonatomic, copy,   nullable) NSString *cachedScreenKey;
+@property (nonatomic, assign) BOOL isRegisteredInRoute;
+@property (nonatomic, copy,   nullable) NSString *cachedNavTitle;
 @end
 
 @implementation RCTVideoView
 
-#pragma mark - Lifecycle
+#pragma mark - Fabric
+
++ (ComponentDescriptorProvider)componentDescriptorProvider {
+  return concreteComponentDescriptorProvider<VideoComponentDescriptor>();
+}
+
+#pragma mark - Init / Dealloc
 
 - (instancetype)init {
-  if(self = [super init]) {
-    _videoManager = [[RCTVideoManager alloc] init];
-    _videoOverlay = [[RCTVideoOverlay alloc] init];
+  if (self = [super init]) {
+    _videoManager  = [[RCTVideoManager alloc] init];
+    _videoOverlay  = [[RCTVideoOverlay alloc] init];
     [UINavigationController rn_enablePopHookOnce];
+    
+    _posterView = [[UIImageView alloc] initWithFrame:CGRectZero];
+    _posterView.userInteractionEnabled = NO;
+    _posterView.contentMode = UIViewContentModeScaleAspectFill;
+    _posterView.clipsToBounds = YES;
+    _posterView.hidden = YES;
+    [self addSubview:_posterView];
+    
+    RN_WEAKIFY(self)
+    _videoManager.onPosterUpdate = ^(UIImage * _Nullable image) {
+      RN_STRONGIFY(self)
+      if (!self) return;
+      self.posterView.image = image;
+      
+      if (image) {
+        BOOL neverPlayed = (CMTimeGetSeconds(self->_videoManager.player.currentTime) <= 0.05);
+        BOOL shouldShow = (self->_videoManager.paused && neverPlayed) || !self->_videoManager.player;
+        self.posterView.hidden = !shouldShow;
+      } else {
+        self.posterView.hidden = YES;
+      }
+    };
+    
+    _videoManager.onHiddenPoster = ^{
+      RN_STRONGIFY(self)
+      if (!self) return;
+      
+      // Nếu paused + chưa từng play → giữ poster, ngược lại ẩn
+      self.posterView.hidden = YES;
+    };
+    
     self.hidden = YES;
   }
   return self;
 }
 
-- (void) initialize {
-  [self createPlayerLayerIfNeeded];
-  if(_shareTagElement) [self shareElement];
-  else self.hidden = NO;
+- (void)dealloc {
+  [self willUnmount];
+  [self didUnmount];
+  _videoManager.onPosterUpdate = nil;
+  _videoManager.onHiddenPoster = nil;
+  _posterView.image = nil;
+  _posterView.hidden = YES;
+  [self detachFromNavAndVC];
 }
 
--(void)updateEventEmitter:(const facebook::react::EventEmitter::Shared &)eventEmitter
-{
+#pragma mark - React props / events
+
+- (void)updateEventEmitter:(const facebook::react::EventEmitter::Shared &)eventEmitter {
   [super updateEventEmitter:eventEmitter];
   auto __eventEmitter = std::static_pointer_cast<const facebook::react::VideoEventEmitter>(eventEmitter);
   [_videoManager updateEventEmitter:__eventEmitter.get()];
 }
 
--(void)layoutSubviews
-{
-  [super layoutSubviews];
-  [self createPlayerLayerIfNeeded];
-  if(_videoManager.playerLayer) _videoManager.playerLayer.frame = self.bounds;
-}
-
-- (void)didMoveToWindow
-{
-  [super didMoveToWindow];
-  __weak __typeof__(self) wSelf = self;
+- (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps {
+  const auto &p = *std::static_pointer_cast<VideoProps const>(props);
   
-  // ----- SET NAVIGATION CONTROLLER ----- //
-  if (self.window) {
-    [[RNEarlyRegistry shared] addView:self];
-    
-    UIViewController *vc = [self nearestViewController];
-    if (!vc) return;
-    [UIViewController rn_swizzleBackLifeIfNeeded];
-    self.nav = vc.navigationController;
-//    __weak UIViewController *wVC = vc;
-    
-    vc.rn_onWillPop = ^{
-      __strong __typeof__(wSelf) self = wSelf;
-      if (!self) return;
-      [self handleWillPop];
-    };
-    vc.rn_onDidPop = ^{
-      __strong __typeof__(wSelf) self = wSelf;
-      if (!self) return;
-      // NSLog(@"[RNBackLife] rn_onDidPop %@", wSelf.shareTagElement);
-      [self handleDidPop];
-    };
-    
-    // Blur (willDisappear) + restore (willAppear)
-//    vc.rn_onWillDisappear = ^(BOOL animated){
-//      __strong __typeof__(wSelf) self = wSelf;
-//      __strong UIViewController *vc = wVC;
-//      if (!self || !vc) return;
-//      
-//      id<UIViewControllerTransitionCoordinator> tc = vc.transitionCoordinator;
-//      if (tc) {
-//        [tc notifyWhenInteractionChangesUsingBlock:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
-//          BOOL willBlur = !ctx.isCancelled;
-//          NSLog(@"[RNBackLife] willDisappear(interactive): blur=%@ %@", willBlur ? @"YES" : @"NO", wSelf.shareTagElement);
-//        }];
-//        [tc animateAlongsideTransition:nil completion:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
-//          if (!ctx.isInteractive) {
-//            BOOL willBlur = !ctx.isCancelled;
-//            NSLog(@"[RNBackLife] willDisappear(non-interactive): blur=%@ %@", willBlur ? @"YES" : @"NO", wSelf.shareTagElement);
-//          }
-//        }];
-//      } else {
-//        NSLog(@"[RNBackLife] willDisappear(no-coordinator): blur=YES %@", wSelf.shareTagElement);
-//      }
-//    };
-    
-//    vc.rn_onWillAppear = ^(BOOL animated){
-//      __strong __typeof__(wSelf) self = wSelf;
-//      __strong UIViewController *vc = wVC;
-//      if (!self || !vc) return;
-//      
-//      id<UIViewControllerTransitionCoordinator> tc = vc.transitionCoordinator;
-//      if (tc) {
-//        [tc animateAlongsideTransition:nil completion:^(__unused id<UIViewControllerTransitionCoordinatorContext> ctx) {
-//          NSLog(@"[RNBackLife] willAppear: restore (unblur) %@", wSelf.shareTagElement);
-//        }];
-//      } else {
-//        NSLog(@"[RNBackLife] willAppear(no-coordinator): restore (unblur) %@", wSelf.shareTagElement);
-//      }
-//    };
-    vc.rn_onDidDisappear = ^(BOOL animated){
-      if(!wSelf.isBlur) {
-        wSelf.isBlur = YES;
-        wSelf.isFocused = NO;
-        // NSLog(@"[RNBackLife] rn_onDidDisappear %@ %f", wSelf.shareTagElement, wSelf.videoOverlay.sharingAnimatedDuration);
-        if (wSelf.nav && wSelf.hasGestureTarget) {
-          [wSelf.nav.interactivePopGestureRecognizer removeTarget:wSelf action:@selector(_handlePopGesture:)];
-          wSelf.hasGestureTarget = NO;
-        }
-        wSelf.nav = nil;
-        [wSelf handleDidPop];
-      }
-      //      if (self.nav && self.hasGestureTarget) {
-      //        [self.nav.interactivePopGestureRecognizer removeTarget:self action:@selector(_handlePopGesture:)];
-      //        self.hasGestureTarget = NO;
-      //      }
-      //      __strong __typeof__(wSelf) self = wSelf;
-      //      __strong UIViewController *vc = wVC;
-      //      if (!self || !vc) return;
-      //
-      //      id<UIViewControllerTransitionCoordinator> tc = vc.transitionCoordinator;
-      //      if (tc) {
-      //        [tc animateAlongsideTransition:nil completion:^(__unused id<UIViewControllerTransitionCoordinatorContext> ctx) {
-      //          NSLog(@"[RNBackLife] rn_onDidDisappear: restore (unblur) %@", wSelf.shareTagElement);
-      //        }];
-      //      } else {
-      //        NSLog(@"[RNBackLife] rn_onDidDisappear(no-coordinator): restore (unblur)");
-      //      }
-      
-    };
-    vc.rn_onDidAppear= ^(BOOL animated) {
-      if(!wSelf.isFocused) {
-        wSelf.isFocused = YES;
-        wSelf.isBlur = NO;
-        // NSLog(@"[RNBackLife] rn_onDidAppear %@", wSelf.shareTagElement);
-        // swipe-back %
-        UIGestureRecognizer *g = self.nav.interactivePopGestureRecognizer;
-        if (g && !self.hasGestureTarget) {
-          [g addTarget:self action:@selector(_handlePopGesture:)];
-          self.hasGestureTarget = YES;
-        }
-      }
-    };
-//    vc.rn_onWillAppear= ^(BOOL animated) {
-//      NSLog(@"[RNBackLife] rn_onWillAppear %@", wSelf.shareTagElement);
-//    };
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(_onWillPopNoti:)
-                                                 name:@"RNWillPopViewControllerNotification"
-                                               object:self.nav];
-  } else if(!_isFocused){
-    // NSLog(@"_detachFromNavAndVC %f", _videoOverlay.sharingAnimatedDuration);
-    [[RNEarlyRegistry shared] removeView:wSelf];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-      [wSelf _detachFromNavAndVC];
-    });
-  };
-  // ----- SET NAVIGATION CONTROLLER ----- //
-}
-
--(void) dealloc {
-  [self beforeUnmount];
-  [self unmount];
-  [self _detachFromNavAndVC];
-}
-
-- (void)prepareForRecycle {
-  [super prepareForRecycle];
-  
-  if(!_sharing) {
-    RCTVideoView *otherView = [RCTVideoTag getOtherViewForTag:self withTag:_shareTagElement];
-    if(otherView.hidden) {
-      otherView.hidden = NO;
-      [otherView.videoManager afterTargetShareElement:_videoManager.player isOtherPaused:_videoManager.paused];
-    }
-    if(_shareTagElement) self.hidden = YES;
-    [self beforeUnmount];
-    [self unmount];
-  }
-}
-
-- (void) beforeUnmount {
-  [self removeViewShareElement:_shareTagElement];
-  [self removeViewShareElement:_shareTagElement];
-  [_videoManager beforeUnmount];
-  _shareTagElement = nil;
-}
-
-- (void) unmount {
-  _backGestureActive = false;
-  _isBlur = YES;
-  _isFocused = NO;
-  [_videoManager unmount];
-  [_videoOverlay unmount];
-}
-
-#pragma mark - React Native Handling Update Props
-
-- (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
-{
-  const auto &newViewProps = *std::static_pointer_cast<VideoProps const>(props);
-  
-  // ------ UPDATE - SHARE TAG ELEMENT ----- //
-  NSString *shareTagElement = newViewProps.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:newViewProps.shareTagElement.c_str()];
-  
-  if (shareTagElement && ![shareTagElement isEqualToString:_shareTagElement]) {
-    [self removeViewShareElement:_shareTagElement];
-    [self addViewShareElement:shareTagElement];
-    _shareTagElement = shareTagElement;
+  NSString *newTag = p.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
+  if (![newTag isEqualToString:_shareTagElement]) {
+    _shareTagElement = newTag;
+    [self _tryRegisterRouteIfNeeded];
   }
   
-  // ------ UPDATE - PAUSED ----- //
-  [_videoManager applyPaused:newViewProps.paused];
+  [_videoManager applySource:p.source.empty() ? @"" : [NSString stringWithUTF8String:p.source.c_str()]];
+  [_videoManager applyPaused:p.paused];
+  [_videoManager applyMuted:p.muted];
+  [_videoManager applyVolume:p.volume];
+  [_videoManager applySeek:p.seek];
+  [_videoManager applyResizeMode:p.resizeMode.empty() ? @"" : [NSString stringWithUTF8String:p.resizeMode.c_str()]];
+  [_videoManager applyProgressInterval:p.progressInterval];
+  [_videoManager applyProgress:p.enableProgress];
+  [_videoManager applyOnLoad:p.enableOnLoad];
+  [_videoManager applyLoop:p.loop skipCheck:NO];
   
-  // ------ UPDATE - SOURCE ----- //
-  NSString *source = newViewProps.source.empty() ? @"" : [NSString stringWithUTF8String:newViewProps.source.c_str()];
-  [_videoManager applySource:source];
+  NSString *posterStr = p.poster.empty() ? nil : [NSString stringWithUTF8String:p.poster.c_str()];
+  [_videoManager applyPoster:posterStr ?: @""];
   
-  // ------ UPDATE - RESIZE MODE ----- //
-  NSString *resizeMode = newViewProps.resizeMode.empty() ? @"" : [NSString stringWithUTF8String:newViewProps.resizeMode.c_str()];
-  [_videoManager applyResizeMode:resizeMode];
-  
-  // ------ UPDATE - VOLUME ----- //
-  [_videoManager applyVolume:newViewProps.volume];
-  
-  // ------ UPDATE - MUTED ----- //
-  [_videoManager applyMuted:newViewProps.muted];
-  
-  // ------ UPDATE - SEEK ----- //
-  [_videoManager applySeek:newViewProps.seek];
-  
-  // ------ UPDATE - PROGRESS INTEVAL TIMING ----- //
-  [_videoManager applyProgressInterval:newViewProps.progressInterval];
-  
-  // ------ UPDATE - PROGRESS TRACKING ----- //
-  [_videoManager applyProgress:newViewProps.enableProgress];
-  
-  // ------ UPDATE - ONLOAD TRACKING ----- //
-  [_videoManager applyOnLoad:newViewProps.enableOnLoad];
-  
-  // ------ UPDATE - ONLOAD TRACKING ----- //
-  [_videoOverlay applySharingAnimatedDuration:newViewProps.sharingAnimatedDuration];
-  
-  // ------ UPDATE - HEADER HEIGHT ----- //
-  _headerHeight = newViewProps.headerHeight;
+  [_videoOverlay applySharingAnimatedDuration:p.sharingAnimatedDuration];
+  _headerHeight = p.headerHeight;
   
   [super updateProps:props oldProps:oldProps];
 }
 
-#pragma mark - Functional Handling
+#pragma mark - Layout
 
-- (void) addViewShareElement:(NSString *) shareTagElement {
-  [RCTVideoTag registerView:self withTag:shareTagElement];
+- (void)layoutSubviews {
+  [super layoutSubviews];
+  self.posterView.frame = self.bounds;
+  [self createPlayerLayerIfNeeded];
+  if (_videoManager.playerLayer) _videoManager.playerLayer.frame = self.bounds;
+  [self bringSubviewToFront:self.posterView];
 }
 
--(void) removeViewShareElement:(NSString *) shareTagElement {
-  [RCTVideoTag removeView:self withTag:shareTagElement];
+#pragma mark - Window lifecycle
+
+- (void)didMoveToWindow {
+  [super didMoveToWindow];
+  
+  if (self.window) {
+    [[RNEarlyRegistry shared] addView:self];
+    UIViewController *vc = [self nearestViewController];
+    if (!vc) return;
+    [self attachLifecycleToViewController:vc];
+    [self rn_updateCachedNavTitle];
+  } else if (!_isFocused) {
+    [[RNEarlyRegistry shared] removeView:self];
+    __weak __typeof__(self) wSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+      [wSelf detachFromNavAndVC];
+    });
+  }
 }
+
+#pragma mark - Player layer
 
 - (void)createPlayerLayerIfNeeded {
-  if (CGRectIsEmpty(self.bounds) || _sharing) return;
+  if (CGRectIsEmpty(self.bounds)) return;
   if (!_videoManager.playerLayer) {
     [_videoManager createPlayerLayer];
     const auto &props = *std::static_pointer_cast<VideoProps const>(_props);
     NSString *resizeMode = [NSString stringWithUTF8String:props.resizeMode.c_str()];
     [_videoManager applyResizeMode:resizeMode];
   }
-  if (self.videoManager.playerLayer.superlayer != self.layer) {
+  if (_videoManager.playerLayer.superlayer != self.layer) {
     [self.layer addSublayer:_videoManager.playerLayer];
   }
   [_videoManager setLayerFrame:self.bounds];
 }
 
+#pragma mark - Route registry
 
-#pragma mark - Share Element Handling
-
-- (void)shareElement {
-  RCTVideoView *otherView = [RCTVideoTag getOtherViewForTag:self withTag:_shareTagElement];
-  if(otherView) {
-    const auto &otherProps = *std::static_pointer_cast<VideoProps const>(otherView.props);
-    
-    otherView.sharing = TRUE;
-    [otherView.videoManager beforeShareElement];
-    [_videoManager beforeTargetShareElement];
-    
-    self.hidden = YES;
-    otherView.hidden = YES;
-    
-    CGRect toFrame = self.layer.presentationLayer ? self.layer.presentationLayer.frame : self.frame;
-    toFrame.origin.y += _headerHeight;
-    
-    CGRect fromFrame = otherView.layer.presentationLayer ? otherView.layer.presentationLayer.frame : otherView.frame;
-    fromFrame.origin.y += otherView.headerHeight;
-    
-    __weak RCTVideoView *weakSelf = self;
-    [_videoOverlay moveToOverlay:fromFrame
-                      tagetFrame:toFrame
-                          player:otherView.videoManager.player
-             aVLayerVideoGravity: otherView.videoManager.aVLayerVideoGravity
-                         bgColor:otherView.backgroundColor
-                        onTarget:^ {
-      self.hidden = NO;
-      if(!otherProps.hiddenWhenShareElement) {
-        otherView.hidden = NO;
-      }
-      [weakSelf.videoManager afterTargetShareElement:otherView.videoManager.player isOtherPaused:otherView.videoManager.paused];
-    }
-                     onCompleted:^ {
-      otherView.sharing = FALSE;
-      [otherView.videoManager afterShareElementComplete];
-      [otherView createPlayerLayerIfNeeded];
-    }];
-  } else self.hidden = NO;
-}
-
-- (void)shareElementWhenDealloc {
-  RCTVideoView *otherView = [RCTVideoTag getOtherViewForTag:self withTag:_shareTagElement];
-  if(otherView) {
-    _sharing = TRUE;
-    [_videoManager beforeShareElement];
-    [otherView.videoManager beforeTargetShareElement];
-    
-    otherView.hidden = YES;
-    
-    CGRect fromFrame = self.layer.presentationLayer.frame;
-    fromFrame.origin.y += _headerHeight;
-    
-    CGRect toFrame = otherView.layer.presentationLayer.frame;
-    toFrame.origin.y += otherView.headerHeight;
-    
-    __weak RCTVideoView *weakSelf = self;
-    [_videoOverlay moveToOverlay:fromFrame
-                      tagetFrame:toFrame
-                          player:_videoManager.player
-             aVLayerVideoGravity: _videoManager.aVLayerVideoGravity
-                         bgColor: self.backgroundColor
-                        onTarget:^ {
-      otherView.hidden = NO;
-      [otherView.videoManager afterTargetShareElement:weakSelf.videoManager.player isOtherPaused:weakSelf.videoManager.paused];
-    }
-                     onCompleted:^ {
-      weakSelf.sharing = FALSE;
-      [weakSelf unmount];
-    }];
-  } else [self unmount];
-}
-
-#pragma mark - Fabric Integration - Important!
-
-+ (ComponentDescriptorProvider)componentDescriptorProvider {
-  return concreteComponentDescriptorProvider<VideoComponentDescriptor>();
-}
-
-#pragma mark - Legacy Command Handling
-- (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args
-{
-  if ([commandName isEqualToString:@"initialize"]) {
-    [self initialize];
-  }
-  else if ([commandName isEqualToString:@"setSeekCommand"]) {
-    if (args.count >= 1) {
-      double seek = [args[0] doubleValue];
-      [_videoManager seekToTime:seek];
-    }
-  } else if ([commandName isEqualToString:@"setPausedCommand"]) {
-    if (args.count >= 1) {
-      bool paused = [args[0] boolValue];
-      [_videoManager applyPausedFromCommand:paused];
-    }
-  } else if ([commandName isEqualToString:@"setVolumeCommand"]) {
-    if (args.count >= 1) {
-      double volume = [args[0] doubleValue];
-      [_videoManager applyVolumeFromCommand:volume];
-    }
-  }
-}
-
-#pragma mark - NAVIGATION BACK HANDLING
-
-- (void)_onWillPopNoti:(NSNotification *)note {
-  // WILLPOP FROM NOTIFICATION
-}
-
-- (void)handleWillPop
-{
-  if(_backGestureActive || _sharing) return;
-  NSLog(@"[RNBackLife] rn_onWillPop %f", self.videoOverlay.sharingAnimatedDuration);
-  self.layer.opacity = 0.f;
-  [self shareElementWhenDealloc];
-  [self beforeUnmount];
-  // NSLog(@"Call Back Button")
-}
-
-- (void)rn_onEarlyPopFromNav
-{
-  self.layer.opacity = 0.f;
-  [self shareElementWhenDealloc];
-  [self beforeUnmount];
-  NSLog(@"Call thủ công từ react native");
-}
-
-- (void)handleDidPop
-{
-  if(_sharing) return;
-  // NSLog(@"____ %@", _shareTagElement);
-  RCTVideoView *otherView = [RCTVideoTag getOtherViewForTag:self withTag:_shareTagElement];
-  if(otherView) {
-    // NSLog(@"otherView %@",otherView);
-    [otherView.videoManager afterTargetShareElement:_videoManager.player isOtherPaused:_videoManager.paused];
-  }
-  [[RNEarlyRegistry shared] removeView:self];
-  [self _detachFromNavAndVC];
-  [self beforeUnmount];
-  [self unmount];
-   NSLog(@"[RCTVideoView] didPop (nguồn: VC đã rời stack hoặc dismiss hoàn tất)");
-}
-
-- (void)_handlePopGesture:(UIGestureRecognizer *)gr
-{
-  if(_isBlur) return;
-  CGFloat progress = 0;
+- (void)_tryRegisterRouteIfNeeded {
+  if (_shareTagElement.length == 0) return;
   
-  if ([gr isKindOfClass:[UIPanGestureRecognizer class]]) {
-    UIPanGestureRecognizer *pan = (UIPanGestureRecognizer *)gr;
-    UIView *view = pan.view;
-    if (view) {
-      CGPoint translation = [pan translationInView:view];
-      progress = translation.x / view.bounds.size.width;
-      progress = fmaxf(0.0, fminf(1.0, progress));
+  NSString *newScreenKey = self.cachedScreenKey;
+  if (newScreenKey.length == 0) {
+    UIViewController *vc = [self nearestViewController];
+    if (vc) {
+      newScreenKey = [NSString stringWithFormat:@"%p", vc];
+      self.cachedScreenKey = newScreenKey;
     }
   }
+  if (newScreenKey.length == 0) return;
+  
+  if (self.isRegisteredInRoute) {
+    if (![self.cachedScreenKey isEqualToString:newScreenKey]) {
+      NSString *oldKey = self.cachedScreenKey;
+      if (oldKey.length > 0) {
+        [[RCTVideoRouteRegistry shared] unregisterView:self tag:_shareTagElement screenKey:oldKey];
+      }
+      [[RCTVideoRouteRegistry shared] registerView:self tag:_shareTagElement screenKey:newScreenKey];
+      self.cachedScreenKey = newScreenKey;
+    }
+    return;
+  }
+  
+  [[RCTVideoRouteRegistry shared] registerView:self tag:_shareTagElement screenKey:newScreenKey];
+  self.isRegisteredInRoute = YES;
+}
+
+- (void)_unregisterRouteIfNeeded {
+  if (!self.isRegisteredInRoute || _shareTagElement.length == 0) return;
+  NSString *screenKey = self.cachedScreenKey ?: [[RCTVideoRouteRegistry shared] screenKeyOfView:self];
+  if (screenKey.length == 0) return;
+  [[RCTVideoRouteRegistry shared] unregisterView:self tag:_shareTagElement screenKey:screenKey];
+  self.isRegisteredInRoute = NO;
+}
+
+#pragma mark - Cleanup
+
+- (void)prepareForRecycle {
+  [super prepareForRecycle];
+  [self _unregisterRouteIfNeeded];
+  _posterView.image = nil;
+  _posterView.hidden = YES;
+}
+
+- (void)willUnmount {
+  [self _unregisterRouteIfNeeded];
+  [_videoManager willUnmount];
+  _shareTagElement = nil;
+  // reset UI nhẹ để reuse
+  _posterView.image = nil;
+  _posterView.hidden = YES;
+}
+
+- (void)didUnmount {
+  _backGestureActive = NO;
+  _isBlur = YES;
+  _isFocused = NO;
+  _otherView = nil;
+  [_videoManager didUnmount];
+  [_videoOverlay didUnmount];
+}
+
+#pragma mark - Shared element
+
+- (nullable RCTVideoView *)getOtherViewForShare {
+  if (_shareTagElement.length == 0) return nil;
+  RCTVideoView *target = [[RCTVideoRouteRegistry shared] resolveShareTargetForView:self tag:_shareTagElement];
+  if (target == self) target = nil;
+  return target;
+}
+
+- (void)performSharedElementTransition {
+  [self _tryRegisterRouteIfNeeded];
+  RCTVideoView *other = [self getOtherViewForShare];
+  if (other) {
+    [self _performSharedTransitionFrom:other to:self direction:RCTVideoTransitionDirectionForward];
+  } else {
+    self.hidden = NO;
+  }
+}
+
+- (void)_performBackSharedElementIfPossible {
+  [self _tryRegisterRouteIfNeeded];
+  RCTVideoView *other = [self getOtherViewForShare];
+  if (other) {
+    [self _performSharedTransitionFrom:self to:other direction:RCTVideoTransitionDirectionBackward];
+  }
+}
+
+- (void)_performSharedTransitionFrom:(RCTVideoView *)fromView
+                                  to:(RCTVideoView *)toView
+                           direction:(RCTVideoTransitionDirection)direction {
+  if (!fromView || !toView || fromView == toView) return;
+  
+  UIWindow *win = [RCTVideoHelper getTargetWindow];
+  if (!win) return;
+  
+  [win layoutIfNeeded];
+  [fromView.superview layoutIfNeeded];
+  [toView.superview layoutIfNeeded];
+  
+  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
+  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
+  fromFrame.origin.y += fromView.headerHeight;
+  toFrame.origin.y   += toView.headerHeight;
+  
+  if (CGRectIsEmpty(fromFrame) || CGRectIsEmpty(toFrame)) return;
+  
+  fromView.hidden  = YES;
+  toView.hidden    = YES;
+  
+  RN_WEAKIFY(fromView)
+  RN_WEAKIFY(toView)
+  
+  [self.videoOverlay moveToOverlay:fromFrame
+                        tagetFrame:toFrame
+                            player:fromView.videoManager.player
+               aVLayerVideoGravity:fromView.videoManager.aVLayerVideoGravity
+                           bgColor:fromView.backgroundColor
+                          onTarget:^{
+    RN_STRONGIFY(fromView)
+    RN_STRONGIFY(toView)
+    if (!fromView || !toView) return;
+    
+    if(fromView.videoManager.poster) {
+      fromView.hidden  = NO;
+      fromView.posterView.hidden = NO;
+    }
+    
+    [toView.videoManager adoptPlayerFromManager:fromView.videoManager];
+    [fromView.videoManager detachPlayer];
+  } onCompleted:^{
+    RN_STRONGIFY(fromView)
+    RN_STRONGIFY(toView)
+    if (!fromView || !toView) return;
+    
+    toView.hidden = NO;
+    [toView createPlayerLayerIfNeeded];
+    [toView setNeedsLayout];
+    [toView layoutIfNeeded];
+    
+    
+    if (direction == RCTVideoTransitionDirectionBackward) {
+      Float64 cur = CMTimeGetSeconds(toView.videoManager.player.currentTime);
+      // Nếu video đã từng play → ẩn poster
+      if (cur > 0.05 && toView.videoManager.paused) toView.posterView.hidden = YES;
+    } else {
+      Float64 cur = CMTimeGetSeconds(toView.videoManager.player.currentTime);
+      if (cur < 0.05 && toView.videoManager.paused) toView.posterView.hidden = NO;
+    }
+    
+    [[RCTVideoRouteRegistry shared] commitShareFromView:fromView
+                                                 toView:toView
+                                                    tag:toView.shareTagElement];
+    if (direction == RCTVideoTransitionDirectionBackward) {
+      [fromView willUnmount];
+      [fromView didUnmount];
+    }
+  }];
+}
+
+#pragma mark - Navigation attach/detach
+
+- (void)attachLifecycleToViewController:(UIViewController *)vc {
+  [UIViewController rn_swizzleBackLifeIfNeeded];
+  __weak __typeof__(self) wSelf = self;
+  self.nav = vc.navigationController;
+  
+  vc.rn_onWillPop       = ^{ [wSelf handleWillPop]; };
+  vc.rn_onDidPop        = ^{ [wSelf handleDidPop]; };
+  vc.rn_onWillAppear    = ^(BOOL animated){ [wSelf handleWillAppear:animated]; };
+  vc.rn_onDidAppear     = ^(BOOL animated){ [wSelf handleDidAppear:animated]; };
+  vc.rn_onWillDisappear = ^(BOOL animated){ [wSelf handleWillDisappear:animated]; };
+  vc.rn_onDidDisappear  = ^(BOOL animated){ [wSelf handleDidDisappear:animated]; };
+  
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(_onWillPopNoti:)
+                                               name:@"RNWillPopViewControllerNotification"
+                                             object:self.nav];
+}
+
+- (void)detachFromNavAndVC {
+  UIViewController *vc = [self nearestViewController];
+  if (vc) {
+    vc.rn_onWillPop = nil;
+    vc.rn_onDidPop  = nil;
+    vc.rn_onWillAppear = nil;
+    vc.rn_onDidAppear  = nil;
+    vc.rn_onWillDisappear = nil;
+    vc.rn_onDidDisappear  = nil;
+  }
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:@"RNWillPopViewControllerNotification"
+                                                object:self.nav];
+}
+
+#pragma mark - Navigation events
+
+- (void)rn_onEarlyPopFromNav {
+  [self _performBackSharedElementIfPossible];
+  [self willUnmount];
+}
+
+- (void)_onWillPopNoti:(NSNotification *)note {}
+
+- (void)handleWillPop {
+  if (_backGestureActive) return;
+  [self _performBackSharedElementIfPossible];
+  [self willUnmount];
+}
+
+- (void)handleDidPop {
+  [[RNEarlyRegistry shared] removeView:self];
+  [self detachFromNavAndVC];
+  [self willUnmount];
+  [self didUnmount];
+}
+
+- (void)handleWillAppear:(BOOL)animated {}
+
+- (void)handleDidAppear:(BOOL)animated {
+  if (_isFocused) return;
+  _isFocused = YES;
+  _isBlur = NO;
+  
+  self.cachedScreenKey = [[RCTVideoRouteRegistry shared] screenKeyOfView:self] ?: self.cachedScreenKey;
+  [self _tryRegisterRouteIfNeeded];
+  
+  UIGestureRecognizer *g = self.nav.interactivePopGestureRecognizer;
+  if (g && !self.hasGestureTarget) {
+    [g addTarget:self action:@selector(_handlePopGesture:)];
+    self.hasGestureTarget = YES;
+  }
+}
+
+- (void)handleWillDisappear:(BOOL)animated {}
+
+- (void)handleDidDisappear:(BOOL)animated {
+  if (_isBlur) return;
+  _isBlur = YES;
+  _isFocused = NO;
+  
+  if (self.nav && self.hasGestureTarget) {
+    [self.nav.interactivePopGestureRecognizer removeTarget:self action:@selector(_handlePopGesture:)];
+    self.hasGestureTarget = NO;
+  }
+  self.nav = nil;
+}
+
+#pragma mark - Back swipe
+
+- (void)_returnPlayerToOtherIfNeeded {
+  RCTVideoView *other = [self getOtherViewForShare];
+  if (other && other != self) {
+    [other.videoManager adoptPlayerFromManager:self.videoManager];
+    [self.videoManager detachPlayer];
+    
+    other.hidden = NO;
+    [other createPlayerLayerIfNeeded];
+    [other setNeedsLayout];
+    [other layoutIfNeeded];
+    
+    // Nếu video đã từng play → ẩn poster
+    Float64 cur = CMTimeGetSeconds(other.videoManager.player.currentTime);
+    if (cur > 0.05) {
+      other.posterView.hidden = YES;
+    }
+    
+    [self willUnmount];
+    [self didUnmount];
+    
+    [[RCTVideoRouteRegistry shared] commitShareFromView:self
+                                                 toView:other
+                                                    tag:other.shareTagElement];
+  }
+}
+
+- (void)_handlePopGesture:(UIGestureRecognizer *)gr {
+  if (_isBlur) return;
   
   switch (gr.state) {
     case UIGestureRecognizerStateBegan: {
-      // NSLog(@"[RCTVideoView] gestureBegan");
-      _backGestureActive = true;
+      _backGestureActive = YES;
+      //RCTVideoLog(self, @"gestureBegan");
       break;
     }
     case UIGestureRecognizerStateChanged: {
-      // NSLog(@"[RCTVideoView] gestureChanged progress: %.2f%%", progress * 100);
       break;
     }
-    case UIGestureRecognizerStateCancelled: {
-      break;
-    }
+    case UIGestureRecognizerStateCancelled:
     case UIGestureRecognizerStateEnded: {
-       // NSLog(@"[RCTVideoView] gestureEnded at progress: %.2f%%", progress * 100);
-      _backGestureActive = false;
-      dispatch_async(dispatch_get_main_queue(), ^{
-        UIViewController *vc = [self nearestViewController];
-        BOOL popped = self.nav && ![self.nav.viewControllers containsObject:vc];
-        if (popped) {
-           //NSLog(@"[RCTVideoView] didPop after swipe-back %@", self.shareTagElement);
-//          [self handleDidPop];
-        } else {
-           //NSLog(@"[RCTVideoView] swipe-back not completed (cancelled) %@", self.shareTagElement);
-        }
-      });
+      _backGestureActive = NO;
+      
+      id<UIViewControllerTransitionCoordinator> tc =
+      self.nav.topViewController.transitionCoordinator ?: self.nav.transitionCoordinator;
+      
+      if (tc) {
+        [tc notifyWhenInteractionChangesUsingBlock:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
+          BOOL popped = !ctx.isCancelled;
+          //          NSString *mess = popped ? @"debug didPop after swipe-back" : @"debug swipe-back cancelled";
+          //          RCTVideoLog(self, @"%@", mess);
+          if (popped) {
+            // Gesture back thành công → trả player về other
+            [self _returnPlayerToOtherIfNeeded];
+          }
+        }];
+        
+        [tc animateAlongsideTransition:nil completion:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
+          if (!ctx.isInteractive) {
+            BOOL popped = !ctx.isCancelled;
+            //            NSString *mess = popped ? @"debug didPop (non-interactive)" : @"debug back cancelled (non-interactive)";
+            //            RCTVideoLog(self, @"%@", mess);
+            
+            if (popped) {
+              // Gesture back thành công → trả player về other
+              [self _returnPlayerToOtherIfNeeded];
+            }
+          }
+        }];
+      } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+          //          UIViewController *vc = [self nearestViewController];
+          //          BOOL popped = self.nav && vc && ![self.nav.viewControllers containsObject:vc];
+          //          NSString *mess = popped ? @"debug didPop (fallback)" : @"debug back cancelled (fallback)";
+          //          RCTVideoLog(self, @"%@", mess);
+        });
+      }
       break;
     }
     default:
@@ -489,19 +530,19 @@ using namespace facebook::react;
   }
 }
 
-// ------- CLEAN ------ //
-- (void)_detachFromNavAndVC {
-  UIViewController *vc = [self nearestViewController];
-  if (vc) {
-    vc.rn_onWillPop = nil;
-    vc.rn_onDidPop  = nil;
-    vc.rn_onWillDisappear = nil;
-    vc.rn_onWillAppear = nil;
+
+#pragma mark - Commands
+
+- (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args {
+  if ([commandName isEqualToString:@"initialize"]) {
+    [self performSharedElementTransition];
+  } else if ([commandName isEqualToString:@"setSeekCommand"] && args.count) {
+    [_videoManager seekToTime:[args[0] doubleValue]];
+  } else if ([commandName isEqualToString:@"setPausedCommand"] && args.count) {
+    [_videoManager applyPausedFromCommand:[args[0] boolValue]];
+  } else if ([commandName isEqualToString:@"setVolumeCommand"] && args.count) {
+    [_videoManager applyVolumeFromCommand:[args[0] doubleValue]];
   }
-  
-  [[NSNotificationCenter defaultCenter] removeObserver:self
-                                                  name:@"RNWillPopViewControllerNotification"
-                                                object:self.nav];
 }
 
 @end

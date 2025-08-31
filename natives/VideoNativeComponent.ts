@@ -43,6 +43,7 @@ export interface OnEndData {}
 
 export interface VideoNativeProps extends ViewProps {
   readonly source: string;
+  readonly poster?: string;
   readonly loop?: boolean;
   readonly muted?: boolean;
   readonly paused?: boolean;

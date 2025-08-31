@@ -2,15 +2,26 @@
 //  RCTVideoHelper.h
 //  ShareVideo
 //
-//  Created by Sang Lv on 20/8/25.
-//
+
 #import <Foundation/Foundation.h>
-#import "UIKit/UIKit.h"
+#import <UIKit/UIKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
+
 @interface RCTVideoHelper : NSObject
-+(nullable NSURL *)createVideoURL:(NSString *)source;
-+(nullable NSURL *)createPosterURL:(NSString *)source;
-+(UIWindow *) getTargetWindow;
+
+/// Tạo URL phát video (tự bật proxy + prefetch nếu là http/https)
++ (nullable NSURL *)createVideoURL:(NSString *)source;
+
+/// Tạo URL poster (cache file 1 ngày nếu là http/https)
++ (nullable NSURL *)createPosterURL:(NSString *)source;
+
+/// Lấy frame của chính view trong toạ độ RNSScreen (ổn định, không phụ thuộc animation)
++ (CGRect)frameInScreenStable:(UIView *)view;
+
+/// Lấy window đang hiển thị (multi-scene an toàn)
++ (UIWindow * _Nullable)getTargetWindow;
+
 @end
+
 NS_ASSUME_NONNULL_END

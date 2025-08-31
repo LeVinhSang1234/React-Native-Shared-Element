@@ -2,35 +2,47 @@
 //  RCTVideoOverlay.m
 //  ShareVideo
 //
-//  Created by Sang Lv on 21/8/25.
-//
+
 #import "RCTVideoOverlay.h"
 #import "RCTVideoHelper.h"
 
+/// Default constants
+static const double kDefaultSharingDuration   = 0.35;   // seconds
+static const double kDefaultCompletionDelay   = 0.1;    // seconds
+static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
+
+@interface RCTVideoOverlay ()
+@property (nonatomic, strong) CADisplayLink *displayLink;
+@property (nonatomic, assign) AVLayerVideoGravity videoGravity;
+@property (nonatomic, strong) AVPlayerLayer *playerLayer;
+@end
+
 @implementation RCTVideoOverlay
 
-- (instancetype) init {
-  if(self = [super init]) {
-    _sharingAnimatedDuration = 0.35;
-  };
-  _aVLayerVideoGravity = AVLayerVideoGravityResizeAspect;
+- (instancetype)init {
+  if (self = [super init]) {
+    _sharingAnimatedDuration = kDefaultSharingDuration;
+    _videoGravity = kDefaultVideoGravity;
+  }
   return self;
 }
 
-- (void)applyAVLayerVideoGravity:(AVLayerVideoGravity)aVLayerVideoGravity {
-  if(aVLayerVideoGravity) _aVLayerVideoGravity = aVLayerVideoGravity;
+#pragma mark - Apply props
+
+- (void)applyAVLayerVideoGravity:(AVLayerVideoGravity)gravity {
+  if (gravity) {
+    _videoGravity = gravity;
+  }
 }
 
-// -------- Sharing Animated Duration --------- //
-- (void)applySharingAnimatedDuration:(double)sharingAnimatedDuration {
-  double duration = sharingAnimatedDuration;
-  if(duration < 0) {
-    duration = 0.35;
-  } else duration = duration / 1000;
-  if(duration != _sharingAnimatedDuration){
+- (void)applySharingAnimatedDuration:(double)durationMs {
+  double duration = (durationMs <= 0) ? kDefaultSharingDuration : durationMs / 1000.0;
+  if (duration != _sharingAnimatedDuration) {
     _sharingAnimatedDuration = duration;
   }
 }
+
+#pragma mark - CADisplayLink ticking
 
 - (void)startTicking {
   if (_displayLink) return;
@@ -39,23 +51,23 @@
 }
 
 - (void)stopTicking {
-  [self.displayLink invalidate];
+  [_displayLink invalidate];
   _displayLink = nil;
 }
 
 - (void)_onTick {
-  
-  CALayer *pl = (CALayer *)self.layer.presentationLayer;
-  if (!pl) return;
-  
-  CGRect liveBounds = pl.bounds;
-  
+  CALayer *presentation = self.layer.presentationLayer;
+  if (!presentation) return;
+
+  CGRect liveBounds = presentation.bounds;
+  [CATransaction begin];
   [CATransaction setDisableActions:YES];
   _playerLayer.frame = (CGRect){CGPointZero, liveBounds.size};
   [CATransaction commit];
 }
 
-// -------- Sharing Animated Duration --------- //
+#pragma mark - Overlay animation
+
 - (void)moveToOverlay:(CGRect)fromFrame
            tagetFrame:(CGRect)toFrame
                player:(AVPlayer *)player
@@ -66,51 +78,61 @@
 {
   UIWindow *win = [RCTVideoHelper getTargetWindow];
   if (!win) return;
-  
-  [self unmount];
-  
+
+  [self didUnmount]; // clear any old state
+
+  // setup view
   self.frame = fromFrame;
-  if(bgColor) self.backgroundColor = bgColor;
+  self.backgroundColor = bgColor ?: UIColor.clearColor;
   self.clipsToBounds = YES;
-  
+
+  // setup player layer
   _playerLayer = [AVPlayerLayer playerLayerWithPlayer:player];
-  _playerLayer.videoGravity = gravity ?: AVLayerVideoGravityResizeAspect;
-  _playerLayer.actions = @{@"bounds":NSNull.null, @"position":NSNull.null, @"frame":NSNull.null};
+  _playerLayer.videoGravity = gravity ?: _videoGravity;
+  _playerLayer.actions = @{@"bounds":NSNull.null,
+                           @"position":NSNull.null,
+                           @"frame":NSNull.null};
   _playerLayer.frame = self.bounds;
   [self.layer addSublayer:_playerLayer];
-  
+
   [win addSubview:self];
   [win bringSubviewToFront:self];
 
   [self startTicking];
-  __weak RCTVideoOverlay *weakSelf = self;
+
+  __weak __typeof__(self) weakSelf = self;
   [UIView animateWithDuration:_sharingAnimatedDuration
                         delay:0
                       options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionBeginFromCurrentState
                    animations:^{
     weakSelf.frame = toFrame;
   } completion:^(BOOL finished) {
-    if(finished) {
-      [weakSelf _onTick];
-      [weakSelf stopTicking];
-      
-      if (onTarget) onTarget();
-      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        if (onCompleted) onCompleted();
-        [weakSelf unmount];
-      });
-    }
+    __strong __typeof__(weakSelf) self = weakSelf;
+    if (!self || !finished) return;
+
+    [self _onTick];
+    [self stopTicking];
+
+    if (onTarget) onTarget();
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                 (int64_t)(kDefaultCompletionDelay * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+      if (onCompleted) onCompleted();
+      [self didUnmount];
+    });
   }];
 }
 
+#pragma mark - Cleanup
 
-- (void)unmount {
-  if(_playerLayer) {
+- (void)didUnmount {
+  if (_playerLayer) {
     [_playerLayer removeFromSuperlayer];
     _playerLayer = nil;
   }
   [self removeFromSuperview];
   [self stopTicking];
 }
-@end
 
+@end

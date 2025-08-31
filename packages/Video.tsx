@@ -34,15 +34,22 @@ export interface VideoRef {
 export interface VideoProps
   extends Omit<
     VideoNativeProps,
-    'resizeMode' | 'source' | 'enableProgress' | 'enableOnLoad' | 'headerHeight'
+    | 'resizeMode'
+    | 'source'
+    | 'enableProgress'
+    | 'enableOnLoad'
+    | 'headerHeight'
+    | 'poster'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   source?: string | { uri: string } | number;
+  poster?: string | { uri: string } | number;
 }
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   const {
     source,
+    poster,
     progressInterval = 250,
     volume = 1,
     sharingAnimatedDuration = 350,
@@ -79,12 +86,14 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   }, []);
 
   const _source = useMemo(() => preloadVideoSource(source ?? ''), [source]);
+  const _poster = useMemo(() => preloadVideoSource(poster ?? ''), [poster]);
 
   return (
     <VideoNativeComponent
       {...p}
       ref={nativeRef}
       source={_source}
+      poster={_poster}
       enableProgress={!!p.onProgress}
       enableOnLoad={!!p.onLoad}
       progressInterval={progressInterval}

@@ -2,18 +2,16 @@
 //  RCTVideoManager.h
 //  ShareVideo
 //
-//  Created by Sang Le vinh on 8/19/25.
-//
+
 #import <Foundation/Foundation.h>
-#import "AVKit/AVKit.h"
+#import <AVKit/AVKit.h>
 #import <react/renderer/components/Video/EventEmitters.h>
 
 NS_ASSUME_NONNULL_BEGIN
+
 @interface RCTVideoManager : NSObject
 
-@property (nonatomic, assign) id timeObserver;
-@property (nonatomic, assign) NSTimer *loadEventTimer;
-
+// State
 @property (nonatomic, assign) BOOL loop;
 @property (nonatomic, assign) BOOL muted;
 @property (nonatomic, assign) BOOL paused;
@@ -23,41 +21,54 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) double seek;
 @property (nonatomic, assign) double volume;
 @property (nonatomic, assign) double progressInterval;
-@property (nonatomic, assign) double lastLoadedDuration;
 
-@property (nonatomic, copy) NSString *source;
-@property (nonatomic, copy) NSString *poster;
-@property (nonatomic, copy) NSString *resizeMode;
-@property (nonatomic, copy) AVLayerVideoGravity aVLayerVideoGravity;
+@property (nonatomic, copy)   NSString *source;
+@property (nonatomic, copy)   NSString *poster;            // poster URL/path (do RN truyền xuống)
+@property (nonatomic, copy)   NSString *resizeMode;
+@property (nonatomic, copy)   AVLayerVideoGravity aVLayerVideoGravity;
 
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, strong) AVPlayerLayer *playerLayer;
 @property (nonatomic, assign) const facebook::react::VideoEventEmitter *eventEmitter;
 
-- (void)applyMuted:(BOOL)muted;
-- (void)applyPaused:(BOOL)paused;
+// Callbacks to View
+@property (nonatomic, copy, nullable) void (^onPosterUpdate)(UIImage * _Nullable image);
+@property (nonatomic, copy, nullable) void (^onHiddenPoster)(void);
+
+// Apply props from React
 - (void)applySource:(NSString *)source;
+- (void)applyPoster:(NSString *)poster;                 // NEW: nhận poster và tự tải
 - (void)applyResizeMode:(NSString *)resizeMode;
-- (void)setLayerFrame:(CGRect) bounds;
-- (void)applyOnLoad:(BOOL) enableOnLoad;
-- (void)applyProgress:(BOOL) enableProgress;
-- (void)createPlayerLayer;
-- (void)updateEventEmitter:(const facebook::react::VideoEventEmitter *)eventEmitter;
-- (void)applyProgressInterval:(double) progressInterval;
-- (void)applySeek:(double) seek;
-- (void)seekToTime:(double)seek;
+- (void)applyPaused:(BOOL)paused;
+- (void)applyPausedFromCommand:(BOOL)paused;
+- (void)applyMuted:(BOOL)muted;
 - (void)applyVolume:(double)volume;
 - (void)applyVolumeFromCommand:(double)volume;
-- (void)applyPausedFromCommand:(BOOL)paused;
+- (void)applySeek:(double)seek;
+- (void)applyLoop:(BOOL)loop skipCheck:(BOOL)skipCheck;
+- (void)applyProgressInterval:(double)interval;
+- (void)applyProgress:(BOOL)enable;
+- (void)applyOnLoad:(BOOL)enable;
 
-- (void)beforeShareElement;
-- (void)afterShareElementComplete;
+// Player layer
+- (void)createPlayerLayer;
+- (void)setLayerFrame:(CGRect)bounds;
 
-- (void)beforeTargetShareElement;
-- (void)afterTargetShareElement:(AVPlayer *)otherPlayer isOtherPaused:(BOOL) isOtherPaused;
+// Event emitter
+- (void)updateEventEmitter:(const facebook::react::VideoEventEmitter *)eventEmitter;
+- (void)seekToTime:(double)seek; // GIỮ LẠI cho command
 
-- (void) unmount;
-- (void)beforeUnmount;
+// Share element: chuyển NGUYÊN player từ manager khác sang đây
+- (void)adoptPlayerFromManager:(RCTVideoManager *)other;
+
+// Giữ để tương thích (không khuyến nghị dùng nữa)
+- (void)afterTargetShareElement:(AVPlayer *)otherPlayer
+                  isOtherPaused:(BOOL)isOtherPaused __attribute__((deprecated("Use adoptPlayerFromManager:")));
+- (void)detachPlayer;
+// Lifecycle
+- (void)willUnmount;
+- (void)didUnmount;
 
 @end
+
 NS_ASSUME_NONNULL_END
