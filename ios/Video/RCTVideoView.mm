@@ -235,7 +235,8 @@ using namespace facebook::react;
 
 - (void)prepareForRecycle {
   [super prepareForRecycle];
-  [self _unregisterRouteIfNeeded];
+  // Chỉ auto-trả player nếu KHÔNG có navigation
+  if (!_sharing) [self _returnPlayerToOtherIfNeeded];
   _posterView.image = nil;
   _posterView.hidden = YES;
 }
@@ -264,14 +265,15 @@ using namespace facebook::react;
   if (_shareTagElement.length == 0) return nil;
   RCTVideoView *target = [[RCTVideoRouteRegistry shared] resolveShareTargetForView:self tag:_shareTagElement];
   if (target == self) target = nil;
+  if(target == nil) return _otherView;
   return target;
 }
 
 - (void)performSharedElementTransition {
   [self _tryRegisterRouteIfNeeded];
-  RCTVideoView *other = [self getOtherViewForShare];
-  if (other) {
-    [self _performSharedTransitionFrom:other to:self direction:RCTVideoTransitionDirectionForward];
+  _otherView = [self getOtherViewForShare];
+  if (_otherView) {
+    [self _performSharedTransitionFrom:_otherView to:self direction:RCTVideoTransitionDirectionForward];
   } else {
     self.hidden = NO;
   }
@@ -279,9 +281,9 @@ using namespace facebook::react;
 
 - (void)_performBackSharedElementIfPossible {
   [self _tryRegisterRouteIfNeeded];
-  RCTVideoView *other = [self getOtherViewForShare];
-  if (other) {
-    [self _performSharedTransitionFrom:self to:other direction:RCTVideoTransitionDirectionBackward];
+  _otherView= [self getOtherViewForShare];
+  if (_otherView) {
+    [self _performSharedTransitionFrom:self to:_otherView direction:RCTVideoTransitionDirectionBackward];
   }
 }
 
@@ -303,6 +305,9 @@ using namespace facebook::react;
   toFrame.origin.y   += toView.headerHeight;
   
   if (CGRectIsEmpty(fromFrame) || CGRectIsEmpty(toFrame)) return;
+  
+  fromView.sharing = YES;
+  toView.sharing = YES;
   
   fromView.hidden  = YES;
   toView.hidden    = YES;
@@ -336,6 +341,9 @@ using namespace facebook::react;
     [toView createPlayerLayerIfNeeded];
     [toView setNeedsLayout];
     [toView layoutIfNeeded];
+    
+    fromView.sharing = NO;
+    toView.sharing = NO;
     
     
     if (direction == RCTVideoTransitionDirectionBackward) {
@@ -448,28 +456,28 @@ using namespace facebook::react;
 #pragma mark - Back swipe
 
 - (void)_returnPlayerToOtherIfNeeded {
-  RCTVideoView *other = [self getOtherViewForShare];
-  if (other && other != self) {
-    [other.videoManager adoptPlayerFromManager:self.videoManager];
-    [self.videoManager detachPlayer];
+  _otherView = [self getOtherViewForShare];
+  if (_otherView && _otherView != self) {
+    [_otherView.videoManager adoptPlayerFromManager:_videoManager];
+    [_videoManager detachPlayer];
     
-    other.hidden = NO;
-    [other createPlayerLayerIfNeeded];
-    [other setNeedsLayout];
-    [other layoutIfNeeded];
+    _otherView.hidden = NO;
+    [_otherView createPlayerLayerIfNeeded];
+    [_otherView setNeedsLayout];
+    [_otherView layoutIfNeeded];
     
     // Nếu video đã từng play → ẩn poster
-    Float64 cur = CMTimeGetSeconds(other.videoManager.player.currentTime);
+    Float64 cur = CMTimeGetSeconds(_otherView.videoManager.player.currentTime);
     if (cur > 0.05) {
-      other.posterView.hidden = YES;
+      _otherView.posterView.hidden = YES;
     }
     
     [self willUnmount];
     [self didUnmount];
     
     [[RCTVideoRouteRegistry shared] commitShareFromView:self
-                                                 toView:other
-                                                    tag:other.shareTagElement];
+                                                 toView:_otherView
+                                                    tag:_otherView.shareTagElement];
   }
 }
 
