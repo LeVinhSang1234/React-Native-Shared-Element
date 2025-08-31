@@ -42,7 +42,7 @@
     "type": "all",
     "jsSrcsDir": "natives",
     "android": {
-      "javaPackageName": "com.sharevideo.video"
+      "javaPackageName": "com.sharevideo"
     },
     "ios": {
       "componentProvider": {
