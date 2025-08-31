@@ -8,7 +8,7 @@
 
 /// Default constants
 static const double kDefaultSharingDuration   = 0.35;   // seconds
-static const double kDefaultCompletionDelay   = 0.1;    // seconds
+static const double kDefaultCompletionDelay   = 0.12;    // seconds
 static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
 
 @interface RCTVideoOverlay ()
@@ -71,6 +71,7 @@ static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
 - (void)moveToOverlay:(CGRect)fromFrame
            tagetFrame:(CGRect)toFrame
                player:(AVPlayer *)player
+sharingAnimatedDuration:(double)sharingAnimatedDuration
   aVLayerVideoGravity:(AVLayerVideoGravity)gravity
               bgColor:(UIColor *)bgColor
              onTarget:(void (^)(void))onTarget

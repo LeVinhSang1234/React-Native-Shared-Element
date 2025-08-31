@@ -22,6 +22,8 @@ typedef void (^RNLifecycleBlock)(BOOL animated);
 @property (nonatomic, copy, nullable) RNLifecycleBlock  rn_onWillDisappear;
 @property (nonatomic, copy, nullable) RNLifecycleBlock  rn_onDidDisappear;
 
+- (NSTimeInterval)rn_transitionDuration;
+
 + (void)rn_swizzleBackLifeIfNeeded;
 
 @end

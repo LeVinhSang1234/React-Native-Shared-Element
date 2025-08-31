@@ -52,7 +52,6 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
     poster,
     progressInterval = 250,
     volume = 1,
-    sharingAnimatedDuration = 350,
     hiddenWhenShareElement = true,
     ...p
   } = props;
@@ -98,7 +97,6 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       enableOnLoad={!!p.onLoad}
       progressInterval={progressInterval}
       volume={volume}
-      sharingAnimatedDuration={sharingAnimatedDuration}
       hiddenWhenShareElement={hiddenWhenShareElement}
       headerHeight={headerHeight}
     />

@@ -57,7 +57,7 @@ import Video from '@rn-video/video-share-element';
 | `shareTagElement`        | string    |           | Tag for shared element transitions between video views.                                       |
 | `progressInterval`       | number    | `250`     | Interval (ms) for progress updates via `onProgress`.     |
 | `hiddenWhenShareElement` | boolean   | `true`    | Hide video when sharing as a shared element.                                                  |
-| `sharingAnimatedDuration`| number    | `350`     | Duration (ms) for shared element transition animation.                                        |
+| `sharingAnimatedDuration`| number    | `350`     | Duration (ms) for shared element transition animation. Note: if React Navigation (via `@react-navigation/elements`) is present, the navigation/shared-element integration may override this value to match navigation transitions. |
 
 ## Event Props
 

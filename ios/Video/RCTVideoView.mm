@@ -92,9 +92,9 @@ using namespace facebook::react;
       // Nếu paused + chưa từng play → giữ poster, ngược lại ẩn
       self.posterView.hidden = YES;
     };
-    
     self.hidden = YES;
   }
+  [UIViewController rn_swizzleBackLifeIfNeeded];
   return self;
 }
 
@@ -269,11 +269,20 @@ using namespace facebook::react;
   return target;
 }
 
+- (NSTimeInterval)_currentNavTransitionDuration {
+  id<UIViewControllerTransitionCoordinator> tc =
+  self.nav.topViewController.transitionCoordinator ?: self.nav.transitionCoordinator;
+  return tc ? tc.transitionDuration : _videoOverlay.sharingAnimatedDuration;
+}
+
 - (void)performSharedElementTransition {
   [self _tryRegisterRouteIfNeeded];
   _otherView = [self getOtherViewForShare];
   if (_otherView) {
-    [self _performSharedTransitionFrom:_otherView to:self direction:RCTVideoTransitionDirectionForward];
+    __weak __typeof__(self) wSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [wSelf _performSharedTransitionFrom:wSelf.otherView to:wSelf direction:RCTVideoTransitionDirectionForward];
+    });
   } else {
     self.hidden = NO;
   }
@@ -281,7 +290,7 @@ using namespace facebook::react;
 
 - (void)_performBackSharedElementIfPossible {
   [self _tryRegisterRouteIfNeeded];
-  _otherView= [self getOtherViewForShare];
+  _otherView = [self getOtherViewForShare];
   if (_otherView) {
     [self _performSharedTransitionFrom:self to:_otherView direction:RCTVideoTransitionDirectionBackward];
   }
@@ -318,6 +327,7 @@ using namespace facebook::react;
   [self.videoOverlay moveToOverlay:fromFrame
                         tagetFrame:toFrame
                             player:fromView.videoManager.player
+           sharingAnimatedDuration: _otherView.videoOverlay.sharingAnimatedDuration
                aVLayerVideoGravity:fromView.videoManager.aVLayerVideoGravity
                            bgColor:fromView.backgroundColor
                           onTarget:^{
@@ -368,14 +378,18 @@ using namespace facebook::react;
 #pragma mark - Navigation attach/detach
 
 - (void)attachLifecycleToViewController:(UIViewController *)vc {
-  [UIViewController rn_swizzleBackLifeIfNeeded];
   __weak __typeof__(self) wSelf = self;
   self.nav = vc.navigationController;
+    
+  Float64 dur = [vc rn_transitionDuration];
+  [wSelf.videoOverlay applySharingAnimatedDuration:dur * 1000.0];
   
   vc.rn_onWillPop       = ^{ [wSelf handleWillPop]; };
   vc.rn_onDidPop        = ^{ [wSelf handleDidPop]; };
+  
   vc.rn_onWillAppear    = ^(BOOL animated){ [wSelf handleWillAppear:animated]; };
   vc.rn_onDidAppear     = ^(BOOL animated){ [wSelf handleDidAppear:animated]; };
+  
   vc.rn_onWillDisappear = ^(BOOL animated){ [wSelf handleWillDisappear:animated]; };
   vc.rn_onDidDisappear  = ^(BOOL animated){ [wSelf handleDidDisappear:animated]; };
   
@@ -422,7 +436,9 @@ using namespace facebook::react;
   [self didUnmount];
 }
 
-- (void)handleWillAppear:(BOOL)animated {}
+- (void)handleWillAppear:(BOOL)animated {
+  //RCTVideoLog(self, @"handleWillAppear");
+}
 
 - (void)handleDidAppear:(BOOL)animated {
   if (_isFocused) return;

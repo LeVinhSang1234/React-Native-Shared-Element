@@ -20,6 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)moveToOverlay:(CGRect) moveFrame
            tagetFrame:(CGRect) targetFrame
                player:(AVPlayer *)player
+sharingAnimatedDuration:(double)sharingAnimatedDuration
   aVLayerVideoGravity:(AVLayerVideoGravity)aVLayerVideoGravity
               bgColor: (UIColor *) bgColor
              onTarget:(nonnull void (^)(void))onTarget
