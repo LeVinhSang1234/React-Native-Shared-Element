@@ -121,6 +121,8 @@ using namespace facebook::react;
   
   NSString *newTag = p.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
   if (![newTag isEqualToString:_shareTagElement]) {
+    if(!_sharing) [self _returnPlayerToOtherIfNeeded];
+
     _shareTagElement = newTag;
     [self _tryRegisterRouteIfNeeded];
   }
@@ -236,7 +238,7 @@ using namespace facebook::react;
 - (void)prepareForRecycle {
   [super prepareForRecycle];
   // Chỉ auto-trả player nếu KHÔNG có navigation
-  if (!_sharing) [self _returnPlayerToOtherIfNeeded];
+  if (!_sharing) [self _performBackSharedElementIfPossible];
   _posterView.image = nil;
   _posterView.hidden = YES;
 }
@@ -301,15 +303,19 @@ using namespace facebook::react;
                            direction:(RCTVideoTransitionDirection)direction {
   if (!fromView || !toView || fromView == toView) return;
   
-  UIWindow *win = [RCTVideoHelper getTargetWindow];
-  if (!win) return;
+//  UIWindow *win = [RCTVideoHelper getTargetWindow];
+//  if (!win) return;
+//  
+//  [win layoutIfNeeded];
+//  [fromView.superview layoutIfNeeded];
+//  [toView.superview layoutIfNeeded];
+//  
+//  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
+//  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
   
-  [win layoutIfNeeded];
-  [fromView.superview layoutIfNeeded];
-  [toView.superview layoutIfNeeded];
+  CGRect fromFrame = fromView.layer.presentationLayer ? ((CALayer *)fromView.layer.presentationLayer).frame : fromView.frame;
+  CGRect toFrame = toView.layer.presentationLayer ? ((CALayer *)toView.layer.presentationLayer).frame : toView.frame;
   
-  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
-  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
   fromFrame.origin.y += fromView.headerHeight;
   toFrame.origin.y   += toView.headerHeight;
   
