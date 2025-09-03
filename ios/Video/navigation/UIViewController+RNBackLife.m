@@ -89,7 +89,6 @@ RN_ASSOC_BLOCK(rn_onDidDisappear,   setRn_onDidDisappear,   kDidDisappearKey,  R
 
 - (void)rn_viewWillAppear_back:(BOOL)animated
 {
-  NSLog(@"rn_viewWillAppear_back");
   [self rn_viewWillAppear_back:animated]; // gọi original
   
   rn_setFlag(self, kWillPopFiredKey, NO);
