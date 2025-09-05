@@ -101,8 +101,10 @@ sharingAnimatedDuration:(double)sharingAnimatedDuration
 
   [self startTicking];
 
+  double dur = sharingAnimatedDuration > 0 ? sharingAnimatedDuration : _sharingAnimatedDuration;
+  
   __weak __typeof__(self) weakSelf = self;
-  [UIView animateWithDuration:_sharingAnimatedDuration
+  [UIView animateWithDuration:dur
                         delay:0
                       options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionBeginFromCurrentState
                    animations:^{

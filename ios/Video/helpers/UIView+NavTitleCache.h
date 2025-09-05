@@ -12,9 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface UIView (NavTitleCache)
 
 #ifdef DEBUG
-#define RCTVideoLog(selfRef, fmt, ...) do { \
+#define RCTLog(selfRef, fmt, ...) do { \
     NSString *navTitle = [(selfRef) rn_currentNavTitle]; \
-    NSLog((@"[%@][RCTVideo][%@:%d][%@] " fmt), \
+    NSLog((@"[%@][RCTShare][%@:%d][%@] " fmt), \
            [[NSDate date] descriptionWithLocale:nil], \
            [[NSString stringWithUTF8String:__FILE__] lastPathComponent], \
            __LINE__, \
@@ -22,7 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
            ##__VA_ARGS__); \
 } while(0)
 #else
-#define RCTVideoLog(selfRef, fmt, ...)
+#define RCTLog(selfRef, fmt, ...)
 #endif
 
 /// Cache lại nav title để dùng khi view mất window

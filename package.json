@@ -38,7 +38,7 @@
     "node": ">=18"
   },
   "codegenConfig": {
-    "name": "Video",
+    "name": "ShareElement",
     "type": "all",
     "jsSrcsDir": "natives",
     "android": {
@@ -46,7 +46,8 @@
     },
     "ios": {
       "componentProvider": {
-        "Video": "RCTVideoView"
+        "Video": "RCTVideoView",
+        "ShareView": "RCTShareView"
       }
     }
   }

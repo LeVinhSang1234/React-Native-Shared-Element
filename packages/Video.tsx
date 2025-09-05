@@ -103,4 +103,6 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   );
 });
 
+Video.displayName = 'Video';
+
 export default memo(Video);

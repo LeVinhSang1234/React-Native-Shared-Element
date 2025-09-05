@@ -5,7 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import <AVKit/AVKit.h>
-#import <react/renderer/components/Video/EventEmitters.h>
+#import <react/renderer/components/ShareElement/EventEmitters.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

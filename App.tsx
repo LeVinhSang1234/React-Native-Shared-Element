@@ -1,6 +1,7 @@
 import Video from './packages/Video';
 import { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import ShareView from './packages/ShareView';
 
 function App() {
   return <AppContent />;
@@ -10,7 +11,7 @@ function AppContent() {
   const [copy, setCopy] = useState(false);
 
   return (
-    <View>
+    <ScrollView style={{ marginTop: 100 }}>
       <Video
         style={styles.root}
         source={{
@@ -27,10 +28,18 @@ function AppContent() {
           shareTagElement="Video"
         />
       ) : null}
+      <ShareView shareTagElement="text copu" style={{ backgroundColor: 'red' }}>
+        <Text>Copy Text</Text>
+      </ShareView>
+      {copy ? (
+        <ShareView shareTagElement="text copu" style={{ marginTop: 200 }}>
+          <Text>Copy Text Ne</Text>
+        </ShareView>
+      ) : null}
       <TouchableOpacity style={styles.copy} onPress={() => setCopy(!copy)}>
         <Text>Copy</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -51,6 +60,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'blue',
+  },
+  shareView: {
+    marginTop: 20,
+    backgroundColor: 'red',
   },
 });
 

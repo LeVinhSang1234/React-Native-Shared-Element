@@ -4,16 +4,15 @@
 //
 
 #import "RCTVideoView.h"
-#import "RCTVideoManager.h"
-#import "RCTVideoOverlay.h"
-#import "RCTVideoRouteRegistry.h"
 #import "RCTVideoHelper.h"
 
-#import <react/renderer/components/Video/Props.h>
-#import <react/renderer/components/Video/ComponentDescriptors.h>
+#import "RCTVideoRouteRegistry.h"
+#import "UIView+NavTitleCache.h"
+
+#import <react/renderer/components/ShareElement/Props.h>
+#import <react/renderer/components/ShareElement/ComponentDescriptors.h>
 
 #import "UIView+NearestVC.h"
-#import "UIView+RNSScreenCheck.h"
 #import "UIViewController+RNBackLife.h"
 #import "UINavigationController+RNPopHook.h"
 #import "RNEarlyRegistry.h"
@@ -45,6 +44,7 @@ using namespace facebook::react;
 @property (nonatomic, copy,   nullable) NSString *cachedScreenKey;
 @property (nonatomic, assign) BOOL isRegisteredInRoute;
 @property (nonatomic, copy,   nullable) NSString *cachedNavTitle;
+
 @end
 
 @implementation RCTVideoView
@@ -122,7 +122,7 @@ using namespace facebook::react;
   NSString *newTag = p.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
   if (![newTag isEqualToString:_shareTagElement]) {
     if(!_sharing) [self _returnPlayerToOtherIfNeeded];
-
+    
     _shareTagElement = newTag;
     [self _tryRegisterRouteIfNeeded];
   }
@@ -155,7 +155,13 @@ using namespace facebook::react;
   [self createPlayerLayerIfNeeded];
   if (_videoManager.playerLayer) _videoManager.playerLayer.frame = self.bounds;
   [self bringSubviewToFront:self.posterView];
-}
+
+  if(!self.window) return;
+  // Tính toán offset so với window để dùng khi animate
+  CGRect absFrame = [RCTVideoHelper frameInScreenStable:self];
+  CGRect frame = self.frame;
+  _windowFrameDelta = CGPointMake(absFrame.origin.x - frame.origin.x,
+                                  absFrame.origin.y - frame.origin.y);}
 
 #pragma mark - Window lifecycle
 
@@ -257,6 +263,7 @@ using namespace facebook::react;
   _isBlur = YES;
   _isFocused = NO;
   _otherView = nil;
+  _windowFrameDelta = CGPointZero;
   [_videoManager didUnmount];
   [_videoOverlay didUnmount];
 }
@@ -295,6 +302,9 @@ using namespace facebook::react;
   _otherView = [self getOtherViewForShare];
   if (_otherView) {
     [self _performSharedTransitionFrom:self to:_otherView direction:RCTVideoTransitionDirectionBackward];
+  } else {
+    [self willUnmount];
+    [self didUnmount];
   }
 }
 
@@ -302,22 +312,25 @@ using namespace facebook::react;
                                   to:(RCTVideoView *)toView
                            direction:(RCTVideoTransitionDirection)direction {
   if (!fromView || !toView || fromView == toView) return;
+  UIWindow *win = [RCTVideoHelper getTargetWindow];
+  if (win) {
+    [win layoutIfNeeded];
+    [fromView.superview layoutIfNeeded];
+    [toView.superview layoutIfNeeded];
+  };
   
-//  UIWindow *win = [RCTVideoHelper getTargetWindow];
-//  if (!win) return;
-//  
-//  [win layoutIfNeeded];
-//  [fromView.superview layoutIfNeeded];
-//  [toView.superview layoutIfNeeded];
-//  
-//  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
-//  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
+  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
+  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
   
-  CGRect fromFrame = fromView.layer.presentationLayer ? ((CALayer *)fromView.layer.presentationLayer).frame : fromView.frame;
-  CGRect toFrame = toView.layer.presentationLayer ? ((CALayer *)toView.layer.presentationLayer).frame : toView.frame;
-  
-  fromFrame.origin.y += fromView.headerHeight;
-  toFrame.origin.y   += toView.headerHeight;
+  if(direction == RCTVideoTransitionDirectionBackward || CGRectIsEmpty(fromFrame) || CGRectIsEmpty(toFrame)) {
+    fromFrame = fromView.layer.presentationLayer ? ((CALayer *)fromView.layer.presentationLayer).frame : fromView.frame;
+    toFrame   = toView.layer.presentationLayer ? ((CALayer *)toView.layer.presentationLayer).frame : toView.frame;
+    
+    fromFrame.origin.y += fromView.windowFrameDelta.y;
+    fromFrame.origin.x += fromView.windowFrameDelta.x;
+    toFrame.origin.y   += toView.windowFrameDelta.y;
+    toFrame.origin.x   += toView.windowFrameDelta.x;
+  }
   
   if (CGRectIsEmpty(fromFrame) || CGRectIsEmpty(toFrame)) return;
   
@@ -333,7 +346,7 @@ using namespace facebook::react;
   [self.videoOverlay moveToOverlay:fromFrame
                         tagetFrame:toFrame
                             player:fromView.videoManager.player
-           sharingAnimatedDuration: _otherView.videoOverlay.sharingAnimatedDuration
+           sharingAnimatedDuration:toView.videoOverlay.sharingAnimatedDuration
                aVLayerVideoGravity:fromView.videoManager.aVLayerVideoGravity
                            bgColor:fromView.backgroundColor
                           onTarget:^{
@@ -386,7 +399,7 @@ using namespace facebook::react;
 - (void)attachLifecycleToViewController:(UIViewController *)vc {
   __weak __typeof__(self) wSelf = self;
   self.nav = vc.navigationController;
-    
+  
   Float64 dur = [vc rn_transitionDuration];
   [wSelf.videoOverlay applySharingAnimatedDuration:dur * 1000.0];
   
@@ -443,7 +456,7 @@ using namespace facebook::react;
 }
 
 - (void)handleWillAppear:(BOOL)animated {
-  //RCTVideoLog(self, @"handleWillAppear");
+  //RCTLog(self, @"handleWillAppear");
 }
 
 - (void)handleDidAppear:(BOOL)animated {
@@ -509,7 +522,7 @@ using namespace facebook::react;
   switch (gr.state) {
     case UIGestureRecognizerStateBegan: {
       _backGestureActive = YES;
-      //RCTVideoLog(self, @"gestureBegan");
+      //RCTLog(self, @"gestureBegan");
       break;
     }
     case UIGestureRecognizerStateChanged: {
@@ -526,7 +539,7 @@ using namespace facebook::react;
         [tc notifyWhenInteractionChangesUsingBlock:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
           BOOL popped = !ctx.isCancelled;
           //          NSString *mess = popped ? @"debug didPop after swipe-back" : @"debug swipe-back cancelled";
-          //          RCTVideoLog(self, @"%@", mess);
+          //          RCTLog(self, @"%@", mess);
           if (popped) {
             // Gesture back thành công → trả player về other
             [self _returnPlayerToOtherIfNeeded];
@@ -537,7 +550,7 @@ using namespace facebook::react;
           if (!ctx.isInteractive) {
             BOOL popped = !ctx.isCancelled;
             //            NSString *mess = popped ? @"debug didPop (non-interactive)" : @"debug back cancelled (non-interactive)";
-            //            RCTVideoLog(self, @"%@", mess);
+            //            RCTLog(self, @"%@", mess);
             
             if (popped) {
               // Gesture back thành công → trả player về other
@@ -550,7 +563,7 @@ using namespace facebook::react;
           //          UIViewController *vc = [self nearestViewController];
           //          BOOL popped = self.nav && vc && ![self.nav.viewControllers containsObject:vc];
           //          NSString *mess = popped ? @"debug didPop (fallback)" : @"debug back cancelled (fallback)";
-          //          RCTVideoLog(self, @"%@", mess);
+          //          RCTLog(self, @"%@", mess);
         });
       }
       break;
