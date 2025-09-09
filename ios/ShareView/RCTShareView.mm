@@ -13,9 +13,10 @@
 #import "RCTShareViewOverlay.h"
 #import "RCTVideoHelper.h"
 
+#import "ShareViewController+RNBackLife.h"
+#import "ShareUINavigationController+RNPopHook.h"
+
 #import "UIView+NearestVC.h"
-#import "UIViewController+RNBackLife.h"
-#import "UINavigationController+RNPopHook.h"
 #import "RNEarlyRegistry.h"
 #import "UIView+NavTitleCache.h"
 

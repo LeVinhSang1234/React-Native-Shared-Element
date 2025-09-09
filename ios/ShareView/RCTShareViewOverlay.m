@@ -10,7 +10,7 @@
 
 /// Default constants
 static const double kDefaultSharingDuration = 0.35; // giây
-static const double kDefaultCompletionDelay = 0.1;  // giây
+static const double kDefaultCompletionDelay = 0.15;  // giây
 
 @interface RCTShareViewOverlay ()
 @property (nonatomic, strong) CALayer *ghostLayer;
