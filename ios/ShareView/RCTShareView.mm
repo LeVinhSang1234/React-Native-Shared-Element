@@ -113,7 +113,6 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
     [self willUnmount];
     [self didUnmount];
   }
-  RCTLog(self, @"prepareForRecycle");
 }
 
 #pragma mark - React Props / Layout
@@ -127,7 +126,6 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
     _shareTagElement = newTag;
     [self _tryRegisterRouteIfNeeded];
   }
-  
   // Gán thời gian animation
   [_viewOverlay applySharingAnimatedDuration:p.sharingAnimatedDuration];
   [super updateProps:props oldProps:oldProps];
@@ -243,9 +241,8 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
   
   [_viewOverlay moveToOverlay:fromFrame
                    tagetFrame:toFrame
-                      content:fromView.contentView
+                      content:fromView
       sharingAnimatedDuration:toView.viewOverlay.sharingAnimatedDuration
-                      bgColor:fromView.backgroundColor
                      onTarget:^{
     // Có thể xử lý khi snapshot tới target
   }
@@ -281,7 +278,9 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
   
   // Apply duration transition
   Float64 dur = [vc rn_transitionDuration];
-  [_viewOverlay applySharingAnimatedDuration:dur * 1000.0];
+  if(dur > -1) {
+    [_viewOverlay applySharingAnimatedDuration:dur * 1000.0];
+  }
   
   __weak __typeof__(self) wSelf = self;
   vc.rn_onWillPop       = ^{ [wSelf handleWillPop]; };

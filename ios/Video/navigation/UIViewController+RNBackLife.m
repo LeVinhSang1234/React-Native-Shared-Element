@@ -143,7 +143,7 @@ RN_ASSOC_BLOCK(rn_onDidDisappear,   setRn_onDidDisappear,   kDidDisappearKey,  R
 
 - (NSTimeInterval)rn_transitionDuration {
   NSNumber *n = objc_getAssociatedObject(self, kNavTransitionDurationKey);
-  return n ? n.doubleValue : 0.35; // default
+  return n ? n.doubleValue : -1; // default
 }
 
 @end

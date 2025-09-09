@@ -29,7 +29,6 @@ NS_ASSUME_NONNULL_BEGIN
            tagetFrame:(CGRect)toFrame
               content:(UIView *)contentView
 sharingAnimatedDuration:(double)sharingAnimatedDuration
-              bgColor:(nullable UIColor *)bgColor
              onTarget:(nullable dispatch_block_t)onTarget
           onCompleted:(nullable dispatch_block_t)onCompleted;
 

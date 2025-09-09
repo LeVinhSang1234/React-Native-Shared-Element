@@ -1,4 +1,4 @@
-import Video from './packages/Video';
+// import Video from './packages/Video';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import ShareView from './packages/ShareView';
@@ -12,7 +12,7 @@ function AppContent() {
 
   return (
     <ScrollView style={{ marginTop: 100 }}>
-      <Video
+      {/* <Video
         style={styles.root}
         source={{
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
@@ -27,13 +27,21 @@ function AppContent() {
           }}
           shareTagElement="Video"
         />
-      ) : null}
-      <ShareView shareTagElement="text copu" style={{ backgroundColor: 'red' }}>
+      ) : null} */}
+      <ShareView
+        shareTagElement="text copu"
+        style={{ backgroundColor: 'red' }}
+        sharingAnimatedDuration={5000}
+      >
         <Text>Copy Text</Text>
       </ShareView>
       {copy ? (
-        <ShareView shareTagElement="text copu" style={{ marginTop: 200 }}>
-          <Text>Copy Text Ne</Text>
+        <ShareView
+          shareTagElement="text copu"
+          style={{ marginTop: 200, height: 300, backgroundColor: 'red' }}
+          sharingAnimatedDuration={5000}
+        >
+          <Text>Copy Text</Text>
         </ShareView>
       ) : null}
       <TouchableOpacity style={styles.copy} onPress={() => setCopy(!copy)}>
