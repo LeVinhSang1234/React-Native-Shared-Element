@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import {
   forwardRef,
   memo,
@@ -13,6 +14,14 @@ import ShareViewNativeComponent, {
   Commands,
 } from '../natives/ShareViewNativeComponent';
 
+let useHeaderHeight: () => number;
+try {
+  const nav = require('@react-navigation/elements');
+  useHeaderHeight = nav.useHeaderHeight;
+} catch (e) {
+  useHeaderHeight = () => 0;
+}
+
 type TNativeRef = React.ComponentRef<typeof ShareViewNativeComponent>;
 
 export interface ShareViewProps
@@ -20,6 +29,11 @@ export interface ShareViewProps
 
 const ShareView = forwardRef<View, ShareViewProps>((props, ref: Ref<View>) => {
   const nativeRef = useRef<TNativeRef>(null);
+
+  let headerHeight: number = 0;
+  try {
+    headerHeight = useHeaderHeight();
+  } catch {}
 
   useImperativeHandle(
     ref,
@@ -31,7 +45,13 @@ const ShareView = forwardRef<View, ShareViewProps>((props, ref: Ref<View>) => {
     if (nativeRef.current) Commands.initialize(nativeRef.current);
   }, []);
 
-  return <ShareViewNativeComponent {...props} ref={nativeRef} />;
+  return (
+    <ShareViewNativeComponent
+      {...props}
+      ref={nativeRef}
+      headerHeight={headerHeight}
+    />
+  );
 });
 
 ShareView.displayName = 'ShareView';

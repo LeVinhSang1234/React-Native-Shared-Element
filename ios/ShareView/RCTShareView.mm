@@ -120,6 +120,8 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps {
   const auto &p = *std::static_pointer_cast<ShareViewProps const>(props);
   
+  _headerHeight = p.headerHeight;
+  
   // Gán shareTag từ JS → native
   NSString *newTag = p.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
   if (![newTag isEqualToString:_shareTagElement]) {
@@ -229,6 +231,10 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
     toFrame.origin.y   += toView.windowFrameDelta.y;
     toFrame.origin.x   += toView.windowFrameDelta.x;
   }
+
+  fromFrame.origin.y += fromView.headerHeight;
+  toFrame.origin.y   += toView.headerHeight;
+
   if (CGRectIsEmpty(fromFrame) || CGRectIsEmpty(toFrame)) return;
   fromView.sharing = YES;
   toView.sharing = YES;
@@ -238,8 +244,7 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
   
   RN_WEAKIFY(fromView)
   RN_WEAKIFY(toView)
-  
-  [_viewOverlay moveToOverlay:fromFrame
+  [toView.viewOverlay moveToOverlay:fromFrame
                    tagetFrame:toFrame
                       content:fromView
       sharingAnimatedDuration:toView.viewOverlay.sharingAnimatedDuration
@@ -321,7 +326,7 @@ typedef NS_ENUM(NSInteger, RCTShareTransitionDirection) {
 - (void)_onWillPopNoti:(NSNotification *)note {}
 
 - (void)handleWillPop {
-  if (_backGestureActive) return;
+  if (_backGestureActive || _sharing) return;
   [self _performBackSharedElementIfPossible];
   [self willUnmount];
 }

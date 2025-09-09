@@ -31,7 +31,9 @@ static const double kDefaultCompletionDelay = 0.1;  // giây
 
 - (void)applySharingAnimatedDuration:(double)durationMs {
   double duration = (durationMs <= 0) ? kDefaultSharingDuration : durationMs / 1000.0;
-  _sharingAnimatedDuration = duration;
+  if (duration != _sharingAnimatedDuration) {
+    _sharingAnimatedDuration = duration;
+  }
 }
 
 #pragma mark - Clone CALayer tree

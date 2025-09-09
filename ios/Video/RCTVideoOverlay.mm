@@ -8,7 +8,7 @@
 
 /// Default constants
 static const double kDefaultSharingDuration   = 0.35;   // seconds
-static const double kDefaultCompletionDelay   = 0.12;    // seconds
+static const double kDefaultCompletionDelay   = 0.15;    // seconds
 static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
 
 @interface RCTVideoOverlay ()
