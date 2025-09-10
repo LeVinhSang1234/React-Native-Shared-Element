@@ -1,5 +1,5 @@
 {
-  "name": "ShareVideo",
+  "name": "shareelement",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -42,7 +42,7 @@
     "type": "all",
     "jsSrcsDir": "natives",
     "android": {
-      "javaPackageName": "com.sharevideo"
+      "javaPackageName": "com.shareelement"
     },
     "ios": {
       "componentProvider": {
