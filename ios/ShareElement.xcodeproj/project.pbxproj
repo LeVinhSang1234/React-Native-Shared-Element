@@ -17,9 +17,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* ShareElement.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ShareElement.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = "ShareElement/Images.xcassets"; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = "ShareElement/Info.plist"; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* ShareElement.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShareElement.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = ShareElement/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ShareElement/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = ShareElement/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-ShareElement.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ShareElement.debug.xcconfig"; path = "Target Support Files/Pods-ShareElement/Pods-ShareElement.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-ShareElement.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ShareElement.release.xcconfig"; path = "Target Support Files/Pods-ShareElement/Pods-ShareElement.release.xcconfig"; sourceTree = "<group>"; };
@@ -27,20 +27,11 @@
 		75DEA6772E558AAE0010A5BD /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		75DEA6792E558ABB0010A5BD /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ShareElement/AppDelegate.swift; sourceTree = "<group>"; };
-		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = "ShareElement/LaunchScreen.storyboard"; sourceTree = "<group>"; };
+		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = ShareElement/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		7504673E2E698B3500B6879B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				helpers/RCTShareViewRouteRegistry.mm,
-				RCTShareView.mm,
-				RCTShareViewOverlay.m,
-			);
-			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
-		};
 		7577B06B2E5488DD00D02CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -65,7 +56,6 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		7504673A2E698B2000B6879B /* ShareView */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7504673E2E698B3500B6879B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ShareView; sourceTree = "<group>"; };
 		7577B0682E5488C900D02CD4 /* Video */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7577B06B2E5488DD00D02CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Video; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -92,7 +82,7 @@
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
 			);
-			name = "ShareElement";
+			name = ShareElement;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
@@ -116,7 +106,6 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				7504673A2E698B2000B6879B /* ShareView */,
 				7577B0682E5488C900D02CD4 /* Video */,
 				13B07FAE1A68108700A75B9A /* ShareElement */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
@@ -165,8 +154,8 @@
 			);
 			dependencies = (
 			);
-			name = "ShareElement";
-			productName = "ShareElement";
+			name = ShareElement;
+			productName = ShareElement;
 			productReference = 13B07F961A680F5B00A75B9A /* ShareElement.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -311,8 +300,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = L3YUJ2X928;
 				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = "ShareElement/Info.plist";
-             INFOPLIST_KEY_CFBundleDisplayName = "ShareElement";
+				INFOPLIST_FILE = ShareElement/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShareElement;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -324,8 +313,8 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.shareelement";
-				PRODUCT_NAME = "ShareElement";
+				PRODUCT_BUNDLE_IDENTIFIER = com.shareelement;
+				PRODUCT_NAME = ShareElement;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -341,8 +330,8 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = L3YUJ2X928;
-				INFOPLIST_FILE = "ShareElement/Info.plist";
-             INFOPLIST_KEY_CFBundleDisplayName = "ShareElement";
+				INFOPLIST_FILE = ShareElement/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ShareElement;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -354,8 +343,8 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.shareelement";
-				PRODUCT_NAME = "ShareElement";
+				PRODUCT_BUNDLE_IDENTIFIER = com.shareelement;
+				PRODUCT_NAME = ShareElement;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
