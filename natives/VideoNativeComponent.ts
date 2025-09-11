@@ -1,12 +1,6 @@
-/* eslint-disable @react-native/no-deep-imports */
-import {
-  codegenNativeCommands,
-  codegenNativeComponent,
-  HostComponent,
-  ViewProps,
-} from 'react-native';
-
-import {
+import { codegenNativeCommands, codegenNativeComponent } from 'react-native';
+import type { ViewProps, HostComponent } from 'react-native';
+import type {
   BubblingEventHandler,
   Double,
 } from 'react-native/Libraries/Types/CodegenTypes';

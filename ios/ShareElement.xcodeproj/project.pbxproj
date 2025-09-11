@@ -35,13 +35,9 @@
 		7577B06B2E5488DD00D02CD4 /* Exceptions for "Video" folder in "ShareElement" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				common/RNWeakBox.mm,
-				"helpers/CADisplayLink+UserInfo.m",
 				helpers/RCTVideoCache.mm,
 				helpers/RCTVideoHelper.mm,
 				helpers/RCTVideoRouteRegistry.mm,
-				"helpers/UIView+NavTitleCache.m",
-				"helpers/UIView+RNSScreenCheck.m",
 				navigation/RCTNativeEarly.mm,
 				navigation/RNEarlyRegistry.mm,
 				"navigation/UINavigationController+RNPopHook.m",
@@ -50,6 +46,16 @@
 				RCTVideoManager.mm,
 				RCTVideoOverlay.mm,
 				RCTVideoView.mm,
+			);
+			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
+		};
+		75A479762E72B129007D6D14 /* Exceptions for "common" folder in "ShareElement" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"CADisplayLink+UserInfo.m",
+				RNWeakBox.mm,
+				"UIView+NavTitleCache.m",
+				"UIView+RNSScreenCheck.m",
 			);
 			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
 		};
@@ -66,6 +72,18 @@
 			explicitFolders = (
 			);
 			path = Video;
+			sourceTree = "<group>";
+		};
+		75A479712E72B129007D6D14 /* common */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				75A479762E72B129007D6D14 /* Exceptions for "common" folder in "ShareElement" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = common;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -123,6 +141,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				75A479712E72B129007D6D14 /* common */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
