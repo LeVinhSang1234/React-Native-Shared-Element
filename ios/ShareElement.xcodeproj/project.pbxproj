@@ -32,16 +32,23 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		750E42CC2E72E28E005F133D /* Exceptions for "View" folder in "ShareElement" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				helpers/RCTShareRouteRegistry.mm,
+				"navigation/UINavigationShareController+RNPopHook.m",
+				"navigation/UIViewShareController+RNBackLife.m",
+				RCTShareView.mm,
+			);
+			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
+		};
 		7577B06B2E5488DD00D02CD4 /* Exceptions for "Video" folder in "ShareElement" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				helpers/RCTVideoCache.mm,
 				helpers/RCTVideoHelper.mm,
 				helpers/RCTVideoRouteRegistry.mm,
-				navigation/RCTNativeEarly.mm,
-				navigation/RNEarlyRegistry.mm,
 				"navigation/UINavigationController+RNPopHook.m",
-				"navigation/UIView+NearestVC.m",
 				"navigation/UIViewController+RNBackLife.m",
 				RCTVideoManager.mm,
 				RCTVideoOverlay.mm,
@@ -53,8 +60,11 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"CADisplayLink+UserInfo.m",
+				RCTNativeEarly.mm,
+				RNEarlyRegistry.mm,
 				RNWeakBox.mm,
 				"UIView+NavTitleCache.m",
+				"UIView+NearestVC.m",
 				"UIView+RNSScreenCheck.m",
 			);
 			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
@@ -62,6 +72,18 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		750E42C82E72E20B005F133D /* View */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				750E42CC2E72E28E005F133D /* Exceptions for "View" folder in "ShareElement" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
 		7577B0682E5488C900D02CD4 /* Video */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -135,6 +157,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				750E42C82E72E20B005F133D /* View */,
 				7577B0682E5488C900D02CD4 /* Video */,
 				13B07FAE1A68108700A75B9A /* ShareElement */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
