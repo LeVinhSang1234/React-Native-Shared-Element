@@ -1,6 +1,6 @@
-package com.sharevideo.helpers
+package com.shareelement.helpers
 
-import com.sharevideo.video.RCTVideoView
+import com.shareelement.video.RCTVideoView
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 

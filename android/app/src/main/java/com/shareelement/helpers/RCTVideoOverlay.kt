@@ -1,4 +1,4 @@
-package com.sharevideo.helpers
+package com.shareelement.helpers
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter

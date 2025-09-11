@@ -1,4 +1,4 @@
-package com.sharevideo.helpers
+package com.shareelement.helpers
 
 import android.view.View
 import androidx.core.view.ViewCompat

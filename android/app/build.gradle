@@ -49,7 +49,7 @@ react {
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
-    nodeExecutableAndArgs = ["/opt/homebrew/bin/node"]
+    nodeExecutableAndArgs = ["/Users/sanglevinh/.nvm/versions/node/v22.14.0/bin/node"]
     /* Autolinking */
     autolinkLibrariesWithApp()
 }

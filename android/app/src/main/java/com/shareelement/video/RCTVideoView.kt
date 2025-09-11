@@ -1,4 +1,4 @@
-package com.sharevideo.video
+package com.shareelement.video
 
 import android.content.Context
 import android.graphics.Rect
@@ -23,16 +23,16 @@ import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.ReactContext
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.UIManagerHelper
-import com.sharevideo.helpers.HttpStack
-import com.sharevideo.helpers.OnBufferingEvent
-import com.sharevideo.helpers.OnEndEvent
-import com.sharevideo.helpers.OnErrorEvent
-import com.sharevideo.helpers.OnLoadStartEvent
-import com.sharevideo.helpers.RCTVideoErrorUtils
-import com.sharevideo.helpers.RCTVideoLayoutUtils
-import com.sharevideo.helpers.RCTVideoOverlay
-import com.sharevideo.helpers.RCTVideoTag
-import com.sharevideo.helpers.RCTVideoTickers
+import com.shareelement.helpers.HttpStack
+import com.shareelement.helpers.OnBufferingEvent
+import com.shareelement.helpers.OnEndEvent
+import com.shareelement.helpers.OnErrorEvent
+import com.shareelement.helpers.OnLoadStartEvent
+import com.shareelement.helpers.RCTVideoErrorUtils
+import com.shareelement.helpers.RCTVideoLayoutUtils
+import com.shareelement.helpers.RCTVideoOverlay
+import com.shareelement.helpers.RCTVideoTag
+import com.shareelement.helpers.RCTVideoTickers
 import kotlin.math.max
 import kotlin.math.roundToInt
 
