@@ -6,6 +6,7 @@
 //
 
 #import <React/RCTViewComponentView.h>
+#import "RCTShareViewOverlay.h"
 
 @interface RCTShareView : RCTViewComponentView
 
@@ -14,4 +15,9 @@
 
 @property (nonatomic, copy, nullable) NSString *shareTagElement;
 @property (nonatomic, assign) double sharingAnimatedDuration;
+@property (nonatomic, strong, nonnull) RCTShareViewOverlay *shareViewOverlay;
+
+// Lưu sự khác biệt x, y giữa frame hiện tại so với khung nhìn window
+@property (nonatomic, assign) CGPoint windowFrameDelta;
+
 @end

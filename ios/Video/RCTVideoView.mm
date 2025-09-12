@@ -34,18 +34,31 @@ typedef NS_ENUM(NSInteger, RCTVideoTransitionDirection) {
 using namespace facebook::react;
 
 @interface RCTVideoView ()
-@property (nonatomic, weak)   UINavigationController *nav;
+// Navigation
+@property (nonatomic, weak) UINavigationController *nav;
 @property (nonatomic, assign) BOOL hasGestureTarget;
 @property (nonatomic, assign) BOOL backGestureActive;
+
+// Focus state
 @property (nonatomic, assign) BOOL isFocused;
 @property (nonatomic, assign) BOOL isBlur;
 
+// Other refs
 @property (nonatomic, strong) UIImageView *posterView;
 @property (nonatomic, strong, nullable) RCTVideoView *otherView;
 
-@property (nonatomic, copy,   nullable) NSString *cachedScreenKey;
+// Routing
+@property (nonatomic, copy, nullable) NSString *cachedScreenKey;
 @property (nonatomic, assign) BOOL isRegisteredInRoute;
-@property (nonatomic, copy,   nullable) NSString *cachedNavTitle;
+@property (nonatomic, copy, nullable) NSString *cachedNavTitle;
+
+// Block tokens để remove khi detach
+@property (nonatomic, copy) RNBackBlock willPopBlock;
+@property (nonatomic, copy) RNBackBlock didPopBlock;
+@property (nonatomic, copy) RNLifecycleBlock willAppearBlock;
+@property (nonatomic, copy) RNLifecycleBlock didAppearBlock;
+@property (nonatomic, copy) RNLifecycleBlock willDisappearBlock;
+@property (nonatomic, copy) RNLifecycleBlock didDisappearBlock;
 
 @end
 
@@ -156,13 +169,14 @@ using namespace facebook::react;
   [self createPlayerLayerIfNeeded];
   if (_videoManager.playerLayer) _videoManager.playerLayer.frame = self.bounds;
   [self bringSubviewToFront:self.posterView];
-
+  
   if(!self.window) return;
   // Tính toán offset so với window để dùng khi animate
   CGRect absFrame = [RCTVideoHelper frameInScreenStable:self];
   CGRect frame = self.frame;
   _windowFrameDelta = CGPointMake(absFrame.origin.x - frame.origin.x,
-                                  absFrame.origin.y - frame.origin.y);}
+                                  absFrame.origin.y - frame.origin.y);
+}
 
 #pragma mark - Window lifecycle
 
@@ -310,23 +324,6 @@ using namespace facebook::react;
                                   to:(RCTVideoView *)toView
                            direction:(RCTVideoTransitionDirection)direction {
   if (!fromView || !toView || fromView == toView) return;
-  
-//  UIWindow *win = [RCTVideoHelper getTargetWindow];
-//  if (!win) return;
-//
-//  [win layoutIfNeeded];
-//  [fromView.superview layoutIfNeeded];
-//  [toView.superview layoutIfNeeded];
-//
-//  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
-//  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
-  
-//  CGRect fromFrame = fromView.layer.presentationLayer ? ((CALayer *)fromView.layer.presentationLayer).frame : fromView.frame;
-//  CGRect toFrame = toView.layer.presentationLayer ? ((CALayer *)toView.layer.presentationLayer).frame : toView.frame;
-//  
-//  fromFrame.origin.y += fromView.headerHeight;
-//  toFrame.origin.y   += toView.headerHeight;
-  
   UIWindow *win = [RCTVideoHelper getTargetWindow];
   if (win) {
     [win layoutIfNeeded];
@@ -362,12 +359,11 @@ using namespace facebook::react;
   RN_WEAKIFY(toView)
   
   [toView.videoOverlay moveToOverlay:fromFrame
-                        tagetFrame:toFrame
-                            player:fromView.videoManager.player
-           sharingAnimatedDuration: _otherView.videoOverlay.sharingAnimatedDuration
-               aVLayerVideoGravity:fromView.videoManager.aVLayerVideoGravity
-                           bgColor:fromView.backgroundColor
-                          onTarget:^{
+                          tagetFrame:toFrame
+                              player:fromView.videoManager.player
+                 aVLayerVideoGravity:fromView.videoManager.aVLayerVideoGravity
+                             bgColor:fromView.backgroundColor
+                            onTarget:^{
     RN_STRONGIFY(fromView)
     RN_STRONGIFY(toView)
     if (!fromView || !toView) return;
@@ -417,18 +413,18 @@ using namespace facebook::react;
 - (void)attachLifecycleToViewController:(UIViewController *)vc {
   __weak __typeof__(self) wSelf = self;
   self.nav = vc.navigationController;
-    
+  
   Float64 dur = [vc rn_transitionDuration];
   [wSelf.videoOverlay applySharingAnimatedDuration:dur * 1000.0];
   
-  vc.rn_onWillPop       = ^{ [wSelf handleWillPop]; };
-  vc.rn_onDidPop        = ^{ [wSelf handleDidPop]; };
+  [vc.rn_onWillPopBlocks addObject:^{ [wSelf handleWillPop]; }];
+  [vc.rn_onDidPopBlocks addObject:^{ [wSelf handleDidPop]; }];
   
-  vc.rn_onWillAppear    = ^(BOOL animated){ [wSelf handleWillAppear:animated]; };
-  vc.rn_onDidAppear     = ^(BOOL animated){ [wSelf handleDidAppear:animated]; };
+  [vc.rn_onWillAppearBlocks addObject:^(BOOL animated){ [wSelf handleWillAppear:animated]; }];
+  [vc.rn_onDidAppearBlocks addObject:^(BOOL animated){ [wSelf handleDidAppear:animated]; }];
   
-  vc.rn_onWillDisappear = ^(BOOL animated){ [wSelf handleWillDisappear:animated]; };
-  vc.rn_onDidDisappear  = ^(BOOL animated){ [wSelf handleDidDisappear:animated]; };
+  [vc.rn_onWillDisappearBlocks addObject:^(BOOL animated){ [wSelf handleWillDisappear:animated]; }];
+  [vc.rn_onDidDisappearBlocks addObject:^(BOOL animated){ [wSelf handleDidDisappear:animated]; }];
   
   [[NSNotificationCenter defaultCenter] addObserver:self
                                            selector:@selector(_onWillPopNoti:)
@@ -439,13 +435,21 @@ using namespace facebook::react;
 - (void)detachFromNavAndVC {
   UIViewController *vc = [self nearestViewController];
   if (vc) {
-    vc.rn_onWillPop = nil;
-    vc.rn_onDidPop  = nil;
-    vc.rn_onWillAppear = nil;
-    vc.rn_onDidAppear  = nil;
-    vc.rn_onWillDisappear = nil;
-    vc.rn_onDidDisappear  = nil;
+    if (self.willPopBlock) [vc.rn_onWillPopBlocks removeObject:self.willPopBlock];
+    if (self.didPopBlock)  [vc.rn_onDidPopBlocks removeObject:self.didPopBlock];
+    if (self.willAppearBlock) [vc.rn_onWillAppearBlocks removeObject:self.willAppearBlock];
+    if (self.didAppearBlock)  [vc.rn_onDidAppearBlocks removeObject:self.didAppearBlock];
+    if (self.willDisappearBlock) [vc.rn_onWillDisappearBlocks removeObject:self.willDisappearBlock];
+    if (self.didDisappearBlock)  [vc.rn_onDidDisappearBlocks removeObject:self.didDisappearBlock];
   }
+  
+  self.willPopBlock = nil;
+  self.didPopBlock = nil;
+  self.willAppearBlock = nil;
+  self.didAppearBlock = nil;
+  self.willDisappearBlock = nil;
+  self.didDisappearBlock = nil;
+  
   [[NSNotificationCenter defaultCenter] removeObserver:self
                                                   name:@"RNWillPopViewControllerNotification"
                                                 object:self.nav];
@@ -458,7 +462,12 @@ using namespace facebook::react;
   [self willUnmount];
 }
 
-- (void)_onWillPopNoti:(NSNotification *)note {}
+- (void)_onWillPopNoti:(NSNotification *)note {
+//  UIViewController *fromVC = note.userInfo[@"from"];
+//  if (fromVC == [self nearestViewController]) {
+//    RCTLog(self, @"Video View");
+//  }
+}
 
 - (void)handleWillPop {
   if (_backGestureActive || _sharing) return;

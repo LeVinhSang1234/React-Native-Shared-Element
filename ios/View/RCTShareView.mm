@@ -7,16 +7,22 @@
 
 #import "RCTShareView.h"
 #import "RCTShareRouteRegistry.h"
+#import "RCTVideoHelper.h"
 
 #import <react/renderer/components/ShareElement/Props.h>
 #import <react/renderer/components/ShareElement/ComponentDescriptors.h>
 
 #import "UIView+NearestVC.h"
-#import "UIViewShareController+RNBackLife.h"
-#import "UINavigationShareController+RNPopHook.h"
+#import "UIViewController+RNBackLife.h"
+#import "UINavigationController+RNPopHook.h"
 
 #import "RNEarlyRegistry.h"
 #import "UIView+NavTitleCache.h"
+
+typedef NS_ENUM(NSInteger, RCTShareViewTransitionDirection) {
+  RCTShareViewTransitionDirectionForward,
+  RCTShareViewTransitionDirectionBackward
+};
 
 using namespace facebook::react;
 
@@ -35,7 +41,24 @@ using namespace facebook::react;
 @property (nonatomic, copy,   nullable) NSString *cachedScreenKey;
 @property (nonatomic, assign) BOOL isRegisteredInRoute;
 @property (nonatomic, copy,   nullable) NSString *cachedNavTitle;
+
+// Block tokens để remove khi detach
+@property (nonatomic, copy) RNBackBlock willPopBlock;
+@property (nonatomic, copy) RNBackBlock didPopBlock;
+@property (nonatomic, copy) RNLifecycleBlock willAppearBlock;
+@property (nonatomic, copy) RNLifecycleBlock didAppearBlock;
+@property (nonatomic, copy) RNLifecycleBlock willDisappearBlock;
+@property (nonatomic, copy) RNLifecycleBlock didDisappearBlock;
+
 @end
+
+
+#ifndef RN_WEAKIFY
+#define RN_WEAKIFY(var) __weak __typeof__(var) weak_##var = (var);
+#endif
+#ifndef RN_STRONGIFY
+#define RN_STRONGIFY(var) __strong __typeof__(var) var = weak_##var; if (!(var)) return;
+#endif
 
 @implementation RCTShareView
 
@@ -48,6 +71,7 @@ using namespace facebook::react;
 - (instancetype)init {
   if (self = [super init]) {
     self.hidden = YES;
+    _shareViewOverlay  = [[RCTShareViewOverlay alloc] init];
     [UINavigationController rn_enablePopHookOnce];
     [UIViewController rn_swizzleBackLifeIfNeeded];
   }
@@ -64,17 +88,17 @@ using namespace facebook::react;
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps {
   const auto &p = *std::static_pointer_cast<ShareViewProps const>(props);
-
+  
   NSString *newTag = p.shareTagElement.empty()
-      ? nil
-      : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
-
+  ? nil
+  : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
+  
   if (![newTag isEqualToString:_shareTagElement]) {
     if(!_sharing) [self _performBackSharedElementIfPossible];
     _shareTagElement = newTag;
     [self _tryRegisterRouteIfNeeded];
   }
-
+  _headerHeight = p.headerHeight;
   [super updateProps:props oldProps:oldProps];
 }
 
@@ -83,6 +107,12 @@ using namespace facebook::react;
 - (void)layoutSubviews {
   [super layoutSubviews];
   if(!self.window) return;
+
+  // Tính toán offset so với window để dùng khi animate
+  CGRect absFrame = [RCTVideoHelper frameInScreenStable:self];
+  CGRect frame = self.frame;
+  _windowFrameDelta = CGPointMake(absFrame.origin.x - frame.origin.x,
+                                  absFrame.origin.y - frame.origin.y);
 }
 
 - (void)didMoveToWindow {
@@ -105,21 +135,11 @@ using namespace facebook::react;
   }
 }
 
-#pragma mark - Share Element
-
-- (void)_performBackSharedElementIfPossible {
-  [self _tryRegisterRouteIfNeeded];
-  _otherView = [self getOtherViewForShare];
-  if (_otherView) {
-    // TODO
-  }
-}
-
 #pragma mark - Route Registry
 
 - (void)_tryRegisterRouteIfNeeded {
   if (_shareTagElement.length == 0) return;
-
+  
   NSString *newKey = self.cachedScreenKey;
   if (newKey.length == 0) {
     UIViewController *vc = [self nearestViewController];
@@ -127,7 +147,7 @@ using namespace facebook::react;
     self.cachedScreenKey = newKey;
   }
   if (newKey.length == 0) return;
-
+  
   if (!self.isRegisteredInRoute) {
     [[RCTShareRouteRegistry shared] registerView:self
                                              tag:_shareTagElement
@@ -139,22 +159,112 @@ using namespace facebook::react;
 - (void)_unregisterRouteIfNeeded {
   if (!self.isRegisteredInRoute || _shareTagElement.length == 0) return;
   NSString *screenKey = self.cachedScreenKey
-      ?: [[RCTShareRouteRegistry shared] screenKeyOfView:self];
+  ?: [[RCTShareRouteRegistry shared] screenKeyOfView:self];
   if (screenKey.length == 0) return;
-
+  
   [[RCTShareRouteRegistry shared] unregisterView:self
                                              tag:_shareTagElement
                                        screenKey:screenKey];
   self.isRegisteredInRoute = NO;
 }
 
+#pragma mark - Shared element
+
 - (nullable RCTShareView *)getOtherViewForShare {
   if (_shareTagElement.length == 0) return nil;
-  RCTShareView *target =
-      [[RCTShareRouteRegistry shared] resolveShareTargetForView:self
-                                                            tag:_shareTagElement];
+  RCTShareView *target = [[RCTShareRouteRegistry shared] resolveShareTargetForView:self tag:_shareTagElement];
   if (target == self) target = nil;
-  return target ?: _otherView;
+  if(target == nil) return _otherView;
+  return target;
+}
+
+- (NSTimeInterval)_currentNavTransitionDuration {
+  id<UIViewControllerTransitionCoordinator> tc =
+  self.nav.topViewController.transitionCoordinator ?: self.nav.transitionCoordinator;
+  return tc ? tc.transitionDuration : _shareViewOverlay.sharingAnimatedDuration;
+}
+
+- (void)performSharedElementTransition {
+  [self _tryRegisterRouteIfNeeded];
+  _otherView = [self getOtherViewForShare];
+  if (_otherView) {
+    __weak __typeof__(self) wSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [wSelf _performSharedTransitionFrom:wSelf.otherView to:wSelf direction:RCTShareViewTransitionDirectionForward];
+    });
+  } else {
+    self.hidden = NO;
+  }
+}
+
+- (void)_performBackSharedElementIfPossible {
+  [self _tryRegisterRouteIfNeeded];
+  _otherView = [self getOtherViewForShare];
+  if (_otherView) {
+    [self _performSharedTransitionFrom:self to:_otherView direction:RCTShareViewTransitionDirectionBackward];
+  }
+}
+
+- (void)_performSharedTransitionFrom:(RCTShareView *)fromView
+                                  to:(RCTShareView *)toView
+                           direction:(RCTShareViewTransitionDirection)direction
+{
+  if (!fromView || !toView || fromView == toView) return;
+
+  UIWindow *win = [RCTVideoHelper getTargetWindow];
+  if (win) {
+    [win layoutIfNeeded];
+    [fromView.superview layoutIfNeeded];
+    [toView.superview layoutIfNeeded];
+  };
+  
+  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
+  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
+  
+  if(direction == RCTShareViewTransitionDirectionBackward || CGRectIsEmpty(fromFrame) || CGRectIsEmpty(toFrame)) {
+    fromFrame = fromView.layer.presentationLayer ? ((CALayer *)fromView.layer.presentationLayer).frame : fromView.frame;
+    toFrame   = toView.layer.presentationLayer ? ((CALayer *)toView.layer.presentationLayer).frame : toView.frame;
+    
+    fromFrame.origin.y += fromView.windowFrameDelta.y;
+    fromFrame.origin.x += fromView.windowFrameDelta.x;
+    toFrame.origin.y   += toView.windowFrameDelta.y;
+    toFrame.origin.x   += toView.windowFrameDelta.x;
+  }
+  
+  fromFrame.origin.y += fromView.headerHeight;
+  toFrame.origin.y   += toView.headerHeight;
+
+  toView.hidden = YES;
+  fromView.hidden = YES;
+  
+  RN_WEAKIFY(fromView)
+  RN_WEAKIFY(toView)
+  [toView.shareViewOverlay moveToOverlay:fromFrame
+                              targetFrame:toFrame
+                                     view:fromView
+                                  onTarget:^{
+    // Khi ghost đã chạm tới target
+    toView.hidden = NO;
+  } onCompleted:^{
+    RN_STRONGIFY(fromView)
+    RN_STRONGIFY(toView)
+    if (!fromView || !toView) return;
+
+    fromView.hidden  = NO;
+    fromView.sharing = NO;
+    toView.sharing   = NO;
+
+    // Đăng ký lại "cạnh share" cho route
+    [[RCTShareRouteRegistry shared] commitShareFromView:fromView
+                                                 toView:toView
+                                                    tag:toView.shareTagElement];
+
+    // Nếu backward → clear old
+    if (direction == RCTShareViewTransitionDirectionBackward) {
+      [fromView willUnmount];
+      [fromView didUnmount];
+    }
+  }];
 }
 
 #pragma mark - Navigation Attach / Detach
@@ -163,12 +273,14 @@ using namespace facebook::react;
   __weak __typeof__(self) wSelf = self;
   self.nav = vc.navigationController;
   
-  vc.rn_onWillPop       = ^{ [wSelf handleWillPop]; };
-  vc.rn_onDidPop        = ^{ [wSelf handleDidPop]; };
-  vc.rn_onWillAppear    = ^(BOOL animated){ [wSelf handleWillAppear:animated]; };
-  vc.rn_onDidAppear     = ^(BOOL animated){ [wSelf handleDidAppear:animated]; };
-  vc.rn_onWillDisappear = ^(BOOL animated){ [wSelf handleWillDisappear:animated]; };
-  vc.rn_onDidDisappear  = ^(BOOL animated){ [wSelf handleDidDisappear:animated]; };
+  [vc.rn_onWillPopBlocks addObject:^{ [wSelf handleWillPop]; }];
+  [vc.rn_onDidPopBlocks addObject:^{ [wSelf handleDidPop]; }];
+  
+  [vc.rn_onWillAppearBlocks addObject:^(BOOL animated){ [wSelf handleWillAppear:animated]; }];
+  [vc.rn_onDidAppearBlocks addObject:^(BOOL animated){ [wSelf handleDidAppear:animated]; }];
+  
+  [vc.rn_onWillDisappearBlocks addObject:^(BOOL animated){ [wSelf handleWillDisappear:animated]; }];
+  [vc.rn_onDidDisappearBlocks addObject:^(BOOL animated){ [wSelf handleDidDisappear:animated]; }];
   
   [[NSNotificationCenter defaultCenter] addObserver:self
                                            selector:@selector(_onWillPopNoti:)
@@ -179,13 +291,21 @@ using namespace facebook::react;
 - (void)detachFromNavAndVC {
   UIViewController *vc = [self nearestViewController];
   if (vc) {
-    vc.rn_onWillPop = nil;
-    vc.rn_onDidPop  = nil;
-    vc.rn_onWillAppear = nil;
-    vc.rn_onDidAppear  = nil;
-    vc.rn_onWillDisappear = nil;
-    vc.rn_onDidDisappear  = nil;
+    if (self.willPopBlock) [vc.rn_onWillPopBlocks removeObject:self.willPopBlock];
+    if (self.didPopBlock)  [vc.rn_onDidPopBlocks removeObject:self.didPopBlock];
+    if (self.willAppearBlock) [vc.rn_onWillAppearBlocks removeObject:self.willAppearBlock];
+    if (self.didAppearBlock)  [vc.rn_onDidAppearBlocks removeObject:self.didAppearBlock];
+    if (self.willDisappearBlock) [vc.rn_onWillDisappearBlocks removeObject:self.willDisappearBlock];
+    if (self.didDisappearBlock)  [vc.rn_onDidDisappearBlocks removeObject:self.didDisappearBlock];
   }
+  
+  self.willPopBlock = nil;
+  self.didPopBlock = nil;
+  self.willAppearBlock = nil;
+  self.didAppearBlock = nil;
+  self.willDisappearBlock = nil;
+  self.didDisappearBlock = nil;
+  
   [[NSNotificationCenter defaultCenter] removeObserver:self
                                                   name:@"RNWillPopViewControllerNotification"
                                                 object:self.nav];
@@ -217,7 +337,12 @@ using namespace facebook::react;
   [self willUnmount];
 }
 
-- (void)_onWillPopNoti:(NSNotification *)note {}
+- (void)_onWillPopNoti:(NSNotification *)note {
+//  UIViewController *fromVC = note.userInfo[@"from"];
+//  if (fromVC == [self nearestViewController]) {
+//    RCTLog(self, @"Share View");
+//  }
+}
 
 - (void)handleWillPop {
   if (_backGestureActive || _sharing) return;
@@ -240,8 +365,8 @@ using namespace facebook::react;
   _isBlur = NO;
   
   self.cachedScreenKey =
-      [[RCTShareRouteRegistry shared] screenKeyOfView:self]
-      ?: self.cachedScreenKey;
+  [[RCTShareRouteRegistry shared] screenKeyOfView:self]
+  ?: self.cachedScreenKey;
   [self _tryRegisterRouteIfNeeded];
   
   UIGestureRecognizer *g = self.nav.interactivePopGestureRecognizer;
@@ -280,6 +405,15 @@ using namespace facebook::react;
       break;
     default:
       break;
+  }
+}
+
+
+#pragma mark - Commands
+
+- (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args {
+  if ([commandName isEqualToString:@"initialize"]) {
+    [self performSharedElementTransition];
   }
 }
 

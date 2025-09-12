@@ -71,7 +71,6 @@ static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
 - (void)moveToOverlay:(CGRect)fromFrame
            tagetFrame:(CGRect)toFrame
                player:(AVPlayer *)player
-sharingAnimatedDuration:(double)sharingAnimatedDuration
   aVLayerVideoGravity:(AVLayerVideoGravity)gravity
               bgColor:(UIColor *)bgColor
              onTarget:(void (^)(void))onTarget
@@ -101,10 +100,8 @@ sharingAnimatedDuration:(double)sharingAnimatedDuration
 
   [self startTicking];
 
-  double dur = sharingAnimatedDuration > 0 ? sharingAnimatedDuration : _sharingAnimatedDuration;
-  
   __weak __typeof__(self) weakSelf = self;
-  [UIView animateWithDuration:dur
+  [UIView animateWithDuration:_sharingAnimatedDuration
                         delay:0
                       options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionBeginFromCurrentState
                    animations:^{
