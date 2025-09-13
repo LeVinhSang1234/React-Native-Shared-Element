@@ -470,9 +470,12 @@ using namespace facebook::react;
 }
 
 - (void)handleWillPop {
-  if (_backGestureActive || _sharing) return;
-  [self _performBackSharedElementIfPossible];
-  [self willUnmount];
+  if (_backGestureActive || _sharing) {
+    [self willUnmount];
+  } else {
+    [self _performBackSharedElementIfPossible];
+    [self willUnmount];
+  }
 }
 
 - (void)handleDidPop {

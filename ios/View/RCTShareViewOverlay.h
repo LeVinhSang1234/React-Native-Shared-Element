@@ -19,9 +19,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)moveToOverlay:(CGRect)fromFrame
            targetFrame:(CGRect)toFrame
-                 view:(UIView *)view
-             onTarget:(void (^)(void))onTarget
-          onCompleted:(void (^)(void))onCompleted;
+             fromView:(UIView *)fromView
+               toView:(UIView *)toView
+              onTarget:(void (^)(void))onTarget
+           onCompleted:(void (^)(void))onCompleted;
 
 - (void)didUnmount;
 

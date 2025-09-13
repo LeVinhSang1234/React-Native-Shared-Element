@@ -32,7 +32,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		75007D982E73F6D400AD4229 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		75007D982E73F6D400AD4229 /* Exceptions for "navigation" folder in "ShareElement" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				RCTNativeEarly.mm,
@@ -42,7 +42,7 @@
 			);
 			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
 		};
-		750E42CC2E72E28E005F133D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		750E42CC2E72E28E005F133D /* Exceptions for "View" folder in "ShareElement" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				helpers/RCTShareRouteRegistry.mm,
@@ -51,7 +51,7 @@
 			);
 			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
 		};
-		7577B06B2E5488DD00D02CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		7577B06B2E5488DD00D02CD4 /* Exceptions for "Video" folder in "ShareElement" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				helpers/RCTVideoCache.mm,
@@ -63,7 +63,7 @@
 			);
 			target = 13B07F861A680F5B00A75B9A /* ShareElement */;
 		};
-		75A479762E72B129007D6D14 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		75A479762E72B129007D6D14 /* Exceptions for "common" folder in "ShareElement" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"CADisplayLink+UserInfo.m",
@@ -77,10 +77,54 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		75007D962E73F6D400AD4229 /* navigation */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (75007D982E73F6D400AD4229 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = navigation; sourceTree = "<group>"; };
-		750E42C82E72E20B005F133D /* View */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (750E42CC2E72E28E005F133D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = View; sourceTree = "<group>"; };
-		7577B0682E5488C900D02CD4 /* Video */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7577B06B2E5488DD00D02CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Video; sourceTree = "<group>"; };
-		75A479712E72B129007D6D14 /* common */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (75A479762E72B129007D6D14 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = common; sourceTree = "<group>"; };
+		75007D962E73F6D400AD4229 /* navigation */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				75007D982E73F6D400AD4229 /* Exceptions for "navigation" folder in "ShareElement" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = navigation;
+			sourceTree = "<group>";
+		};
+		750E42C82E72E20B005F133D /* View */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				750E42CC2E72E28E005F133D /* Exceptions for "View" folder in "ShareElement" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		7577B0682E5488C900D02CD4 /* Video */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7577B06B2E5488DD00D02CD4 /* Exceptions for "Video" folder in "ShareElement" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Video;
+			sourceTree = "<group>";
+		};
+		75A479712E72B129007D6D14 /* common */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				75A479762E72B129007D6D14 /* Exceptions for "common" folder in "ShareElement" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = common;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
