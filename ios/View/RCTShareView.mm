@@ -318,8 +318,10 @@ using namespace facebook::react;
 
 - (void)prepareForRecycle {
   [super prepareForRecycle];
-  if (!_sharing) {
-    [self _performBackSharedElementIfPossible];
+  if (!_sharing) [self _performBackSharedElementIfPossible];
+  else {
+    [self willUnmount];
+    [self didUnmount];
   }
 }
 

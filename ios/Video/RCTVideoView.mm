@@ -260,6 +260,10 @@ using namespace facebook::react;
   [super prepareForRecycle];
   // Chỉ auto-trả player nếu KHÔNG có navigation
   if (!_sharing) [self _performBackSharedElementIfPossible];
+  else {
+    [self willUnmount];
+    [self didUnmount];
+  }
   _posterView.image = nil;
   _posterView.hidden = YES;
 }
