@@ -107,7 +107,7 @@ using namespace facebook::react;
 - (void)layoutSubviews {
   [super layoutSubviews];
   if(!self.window) return;
-
+  
   // Tính toán offset so với window để dùng khi animate
   CGRect absFrame = [RCTVideoHelper frameInScreenStable:self];
   CGRect frame = self.frame;
@@ -210,7 +210,7 @@ using namespace facebook::react;
                            direction:(RCTShareViewTransitionDirection)direction
 {
   if (!fromView || !toView || fromView == toView) return;
-
+  
   UIWindow *win = [RCTVideoHelper getTargetWindow];
   if (win) {
     [win layoutIfNeeded];
@@ -233,32 +233,35 @@ using namespace facebook::react;
   
   fromFrame.origin.y += fromView.headerHeight;
   toFrame.origin.y   += toView.headerHeight;
-
+  
   toView.hidden = YES;
   fromView.hidden = YES;
   
   RN_WEAKIFY(fromView)
   RN_WEAKIFY(toView)
+  fromView.sharing = YES;
+  toView.sharing = YES;
   [toView.shareViewOverlay moveToOverlay:fromFrame
-                              targetFrame:toFrame
-                                     view:fromView
-                                  onTarget:^{
+                             targetFrame:toFrame
+                                fromView:fromView
+                                toView:toView
+                                onTarget:^{
     // Khi ghost đã chạm tới target
     toView.hidden = NO;
   } onCompleted:^{
     RN_STRONGIFY(fromView)
     RN_STRONGIFY(toView)
     if (!fromView || !toView) return;
-
+    
     fromView.hidden  = NO;
     fromView.sharing = NO;
     toView.sharing   = NO;
-
+    
     // Đăng ký lại "cạnh share" cho route
     [[RCTShareRouteRegistry shared] commitShareFromView:fromView
                                                  toView:toView
                                                     tag:toView.shareTagElement];
-
+    
     // Nếu backward → clear old
     if (direction == RCTShareViewTransitionDirectionBackward) {
       [fromView willUnmount];
@@ -315,7 +318,9 @@ using namespace facebook::react;
 
 - (void)prepareForRecycle {
   [super prepareForRecycle];
-  if (!_sharing) [self _performBackSharedElementIfPossible];
+  if (!_sharing) {
+    [self _performBackSharedElementIfPossible];
+  }
 }
 
 - (void)willUnmount {
@@ -338,16 +343,20 @@ using namespace facebook::react;
 }
 
 - (void)_onWillPopNoti:(NSNotification *)note {
-//  UIViewController *fromVC = note.userInfo[@"from"];
-//  if (fromVC == [self nearestViewController]) {
-//    RCTLog(self, @"Share View");
-//  }
+  //  UIViewController *fromVC = note.userInfo[@"from"];
+  //  if (fromVC == [self nearestViewController]) {
+  //    RCTLog(self, @"Share View");
+  //  }
 }
 
 - (void)handleWillPop {
-  if (_backGestureActive || _sharing) return;
-  [self _performBackSharedElementIfPossible];
-  [self willUnmount];
+  if (_backGestureActive || _sharing) {
+    [self willUnmount];
+  } else {
+    [self _performBackSharedElementIfPossible];
+    [self willUnmount];
+  };
+  
 }
 
 - (void)handleDidPop {
@@ -395,19 +404,58 @@ using namespace facebook::react;
   if (_isBlur) return;
   
   switch (gr.state) {
-    case UIGestureRecognizerStateBegan:
+    case UIGestureRecognizerStateBegan: {
       _backGestureActive = YES;
+      //RCTVideoLog(self, @"gestureBegan");
       break;
+    }
+    case UIGestureRecognizerStateChanged: {
+      break;
+    }
     case UIGestureRecognizerStateCancelled:
-    case UIGestureRecognizerStateEnded:
+    case UIGestureRecognizerStateEnded: {
       _backGestureActive = NO;
-      // Sau này: xử lý trả về otherView
+      
+      id<UIViewControllerTransitionCoordinator> tc =
+      self.nav.topViewController.transitionCoordinator ?: self.nav.transitionCoordinator;
+      
+      if (tc) {
+        [tc notifyWhenInteractionChangesUsingBlock:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
+          BOOL popped = !ctx.isCancelled;
+          //          NSString *mess = popped ? @"debug didPop after swipe-back" : @"debug swipe-back cancelled";
+          //          RCTVideoLog(self, @"%@", mess);
+          if (popped) {
+            // Gesture back thành công → trả player về other
+            // [self _returnPlayerToOtherIfNeeded];
+          }
+        }];
+        
+        [tc animateAlongsideTransition:nil completion:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
+          if (!ctx.isInteractive) {
+            BOOL popped = !ctx.isCancelled;
+            //            NSString *mess = popped ? @"debug didPop (non-interactive)" : @"debug back cancelled (non-interactive)";
+            //            RCTVideoLog(self, @"%@", mess);
+            
+            if (popped) {
+              // Gesture back thành công → trả player về other
+              // [self _returnPlayerToOtherIfNeeded];
+            }
+          }
+        }];
+      } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+          //          UIViewController *vc = [self nearestViewController];
+          //          BOOL popped = self.nav && vc && ![self.nav.viewControllers containsObject:vc];
+          //          NSString *mess = popped ? @"debug didPop (fallback)" : @"debug back cancelled (fallback)";
+          //          RCTVideoLog(self, @"%@", mess);
+        });
+      }
       break;
+    }
     default:
       break;
   }
 }
-
 
 #pragma mark - Commands
 
