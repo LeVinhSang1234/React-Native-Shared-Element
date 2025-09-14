@@ -2,7 +2,7 @@ module.exports = {
   dependency: {
     platforms: {
       android: {
-        packageName: 'com.sharevideo.video.RCTVideoPackage',
+        packageName: 'com.shareelement.video.RCTVideoPackage',
         packageClassName: 'RCTVideoPackage',
       },
       ios: {
