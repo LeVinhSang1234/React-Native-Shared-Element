@@ -24,7 +24,9 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
 @property (nonatomic, strong, nullable) UIView *overlayContainer; // full-screen overlay
 @property (nonatomic, strong, nullable) UIView *ghostView;        // cloned tree
 @property (nonatomic, weak,   nullable) UIView *originalView;     // reference to hide/unhide
-@property (nonatomic, assign) BOOL isAnimating;
+
+@property (nonatomic, strong) NSMapTable<UIView *, UIView *> *ghostCache;
+
 @end
 
 @implementation RCTShareViewOverlay
@@ -50,12 +52,9 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
              onTarget:(void (^)(void))onTarget
           onCompleted:(void (^)(void))onCompleted
 {
-  if (_isAnimating) return;
-  _isAnimating = YES;
-  
   UIWindow *win = [RCTVideoHelper getTargetWindow];
-  if (!win) {
-    _isAnimating = NO;
+  if (!win || (!fromView.subviews.count || !toView.subviews.count)) {
+    if (onTarget) onTarget();
     if (onCompleted) onCompleted();
     return;
   }
@@ -220,7 +219,6 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
   self.overlayContainer = nil;
   self.ghostView = nil;
   self.originalView = nil;
-  self.isAnimating = NO;
 }
 
 @end

@@ -78,6 +78,15 @@ using namespace facebook::react;
   return self;
 }
 
+- (void)prepareForRecycle {
+  [super prepareForRecycle];
+  if (!_sharing) [self _performBackSharedElementIfPossible];
+  else {
+    [self willUnmount];
+    [self didUnmount];
+  }
+}
+
 - (void)dealloc {
   [self willUnmount];
   [self didUnmount];
@@ -315,16 +324,6 @@ using namespace facebook::react;
 }
 
 #pragma mark - Cleanup
-
-- (void)prepareForRecycle {
-  [super prepareForRecycle];
-  if (!_sharing) [self _performBackSharedElementIfPossible];
-  else {
-    [self willUnmount];
-    [self didUnmount];
-  }
-}
-
 - (void)willUnmount {
   [self _unregisterRouteIfNeeded];
   _shareTagElement = nil;
@@ -464,6 +463,8 @@ using namespace facebook::react;
 - (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args {
   if ([commandName isEqualToString:@"initialize"]) {
     [self performSharedElementTransition];
+  } else if ([commandName isEqualToString:@"prepareForRecycle"]) {
+   if(!_sharing) [self _performBackSharedElementIfPossible];
   }
 }
 

@@ -12,10 +12,13 @@ interface NativeCommands {
   initialize: (
     viewRef: React.ElementRef<HostComponent<ShareViewNativeProps>>,
   ) => void;
+  prepareForRecycle: (
+    viewRef: React.ElementRef<HostComponent<ShareViewNativeProps>>,
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
-  supportedCommands: ['initialize'],
+  supportedCommands: ['initialize', 'prepareForRecycle'],
 });
 
 export default codegenNativeComponent<ShareViewNativeProps>(
