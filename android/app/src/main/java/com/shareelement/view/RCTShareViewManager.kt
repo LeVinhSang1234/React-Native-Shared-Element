@@ -2,8 +2,6 @@ package com.shareelement.view
 
 import android.os.Build
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -17,8 +15,8 @@ class RCTShareViewManager : ViewGroupManager<RCTShareView>() {
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onDropViewInstance(view: RCTShareView) {
-        view.prepareForRecycle()
         super.onDropViewInstance(view)
+        view.prepareForRecycle()
     }
 
     @ReactProp(name = "shareTagElement")

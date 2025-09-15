@@ -15,18 +15,12 @@ import com.facebook.react.bridge.ReactContext
 import android.widget.TextView
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
-import android.util.Log
 import android.util.TypedValue
 
 class RCTShareViewOverlay(context: Context) : FrameLayout(context) {
-    init {
-        setBackgroundColor(0x880000FF.toInt())
-    }
     companion object {
         private const val DEFAULT_ELEV = 9999f
     }
-
-    private var overlayChild: View? = null
 
     @RequiresApi(Build.VERSION_CODES.P)
     fun moveToOverlay(
@@ -41,12 +35,10 @@ class RCTShareViewOverlay(context: Context) : FrameLayout(context) {
         val root = getTargetRoot() ?: return
         removeAllViews()
 
-        // ✅ Clone fromView
         val clone = deepCloneView(fromView)
         addView(clone)
 
-        // ✅ Setup overlay start frame
-        layoutParams = FrameLayout.LayoutParams(fromFrame.width(), fromFrame.height())
+        layoutParams = LayoutParams(fromFrame.width(), fromFrame.height())
         x = fromFrame.left.toFloat()
         y = fromFrame.top.toFloat()
 
@@ -88,10 +80,13 @@ class RCTShareViewOverlay(context: Context) : FrameLayout(context) {
 
                 override fun onAnimationEnd(animation: Animator) {
                     onTarget?.invoke()
+                    clone.alpha = 0f
+                    clone.layoutParams = LayoutParams(fromFrame.width(), fromFrame.height())
+
                     postDelayed({
-                        onCompleted?.invoke()
                         didUnmount()
-                    }, 80)
+                        onCompleted?.invoke()
+                    }, 100)
                 }
             })
             start()
@@ -283,9 +278,6 @@ class RCTShareViewOverlay(context: Context) : FrameLayout(context) {
                 v
             }
         }
-
-        // copy common props
-        clone.alpha = from.alpha
         clone.rotation = from.rotation
         clone.rotationX = from.rotationX
         clone.rotationY = from.rotationY
@@ -307,10 +299,9 @@ class RCTShareViewOverlay(context: Context) : FrameLayout(context) {
 
     /** Cleanup overlay khi unmount */
     fun didUnmount() {
-        val root = parent as? ViewGroup
-        root?.removeView(this)
+        val root = getTargetRoot() ?: return
+        root.removeView(this)
         removeAllViews()
-        overlayChild = null
     }
 
     private fun getTargetRoot(): ViewGroup? {
@@ -319,8 +310,7 @@ class RCTShareViewOverlay(context: Context) : FrameLayout(context) {
             is ReactContext -> ctx.currentActivity
             else -> null
         }
-        val content = act?.findViewById<ViewGroup>(android.R.id.content)
-        return content ?: (act?.window?.decorView as? ViewGroup)
+        return act?.findViewById(android.R.id.content)
     }
 
     private fun ensureOnTop(root: ViewGroup, v: View) {
