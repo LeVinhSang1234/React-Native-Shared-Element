@@ -3,7 +3,6 @@ package com.shareelement.view
 import android.content.Context
 import android.graphics.Rect
 import android.os.Build
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
@@ -33,8 +32,7 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
     var headerHeight: Double? = null
     var sharingAnimatedDuration: Double? = null
     var isBlurWindow: Boolean = false
-
-    private val overlay: RCTShareViewOverlay = RCTShareViewOverlay(context)
+    private var overlay: RCTShareViewOverlay? = null
 
     init {
         clipChildren = true
@@ -46,8 +44,16 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
         super.onAttachedToWindow()
         if (isBlurWindow) {
             isBlurWindow = false
+            return
         }
         startSharedElementTransition()
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        isBlurWindow = true
+        overlay?.didUnmount()
+        overlay = null
     }
 
     fun initialize() {}
@@ -60,35 +66,38 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
     private fun cleanup() {
         val screenKey = RCTShareRouteRegistry.screenKeyOfView(this) ?: return
         shareTagElement?.let { RCTShareRouteRegistry.unregisterView(this, it, screenKey) }
-        overlay.didUnmount()
+        overlay?.didUnmount()
+        overlay = null
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
     private fun performBackSharedElementIfPossible() {
         val tag = shareTagElement ?: return
         val target = RCTShareRouteRegistry.resolveShareTargetForView(this, tag)
-
-        if (target == null || isEmpty()) {
+        if (target == null || isEmpty() || isBlurWindow) {
             cleanup()
             return
         }
-        val fromRect = rectForShare(this)
-        val toRect = rectForShare(target)
-
         val duration = (sharingAnimatedDuration ?: 300.0).toLong()
-        target.overlay.moveToOverlay(
-            fromFrame = fromRect,
-            toFrame = toRect,
-            fromView = this,
-            toView = target,
-            duration = duration,
-            onTarget = {
-                target.alpha = 1f;
-            },
-            onCompleted = {
-                cleanup()
-            }
-        )
+        val ov = target.overlay ?: RCTShareViewOverlay(target.context).also { target.overlay = it }
+        val clone = ov.deepCloneView(this)
+        target.post {
+            val fromRect = rectForShare(this)
+            val toRect = target.rectForShare(target)
+            ov.moveToOverlay(
+                fromFrame = fromRect,
+                toFrame = toRect,
+                fromView = clone,
+                toView = target,
+                duration = duration,
+                onTarget = {
+                    target.alpha = 1f;
+                },
+                onCompleted = {
+                    cleanup()
+                }
+            )
+        }
     }
 
 
@@ -103,11 +112,12 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
         }
         post {
             postDelayed({
+                val ov = overlay ?: RCTShareViewOverlay(context).also { overlay = it }
                 val fromRect = rectForShare(target)
                 val toRect = rectForShare(this)
 
                 val duration = (sharingAnimatedDuration ?: 300.0).toLong()
-                overlay.moveToOverlay(
+                ov.moveToOverlay(
                     fromFrame = fromRect,
                     toFrame = toRect,
                     fromView = target,
@@ -117,7 +127,10 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
                         target.alpha = 1f;
                         alpha = 1f;
                     },
-                    onCompleted = {}
+                    onCompleted = {
+                        overlay?.didUnmount()
+                        overlay = null
+                    }
                 )
             }, 5)
         }
