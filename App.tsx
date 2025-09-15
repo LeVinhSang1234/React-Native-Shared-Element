@@ -13,18 +13,24 @@ function AppContent() {
     <ScrollView style={{ marginTop: 100 }}>
       <Video
         style={styles.root}
+        poster={{ uri: 'https://picsum.photos/300/200' }}
         source={{
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
+        posterResizeMode="cover"
+        paused
       />
       {copy ? (
         <Video
+          paused
+          poster={{ uri: 'https://picsum.photos/300/200' }}
           style={styles.rootCopy}
           source={{
             uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
           }}
           shareTagElement="Video"
+          posterResizeMode="cover"
         />
       ) : null}
 

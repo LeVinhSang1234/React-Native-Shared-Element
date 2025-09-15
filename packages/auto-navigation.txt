@@ -46,7 +46,7 @@ export function useNavigation() {
     if (gb)
       nav.goBack = () => {
         prepare();
-        setTimeout(gb, 100);
+        setTimeout(gb, 50);
       };
 
     const disp =

@@ -40,21 +40,17 @@ export interface VideoProps
     | 'enableOnLoad'
     | 'headerHeight'
     | 'poster'
+    | 'posterResizeMode'
+    | 'hiddenWhenShareElement'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
+  posterResizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   source?: string | { uri: string } | number;
   poster?: string | { uri: string } | number;
 }
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
-  const {
-    source,
-    poster,
-    progressInterval = 250,
-    volume = 1,
-    hiddenWhenShareElement = true,
-    ...p
-  } = props;
+  const { source, poster, progressInterval = 250, volume = 1, ...p } = props;
 
   let headerHeight: number = 0;
   try {
@@ -97,7 +93,7 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       enableOnLoad={!!p.onLoad}
       progressInterval={progressInterval}
       volume={volume}
-      hiddenWhenShareElement={hiddenWhenShareElement}
+      hiddenWhenShareElement
       headerHeight={headerHeight}
     />
   );

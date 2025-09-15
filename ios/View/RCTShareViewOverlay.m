@@ -69,6 +69,10 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
   
   // Deep clone full tree
   UIView *ghost = [self _deepClone:fromView];
+  
+  toView.hidden = YES;
+  fromView.hidden = YES;
+  
   ghost.frame = fromFrame;
   [self.overlayContainer addSubview:ghost];
   self.ghostView = ghost;
@@ -98,46 +102,58 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
 #pragma mark - Deep clone
 
 - (UIView *)_deepClone:(UIView *)view {
-  // UILabel chuẩn
+  UIView *copy = nil;
+  
   if ([view isKindOfClass:[UILabel class]]) {
     UILabel *orig = (UILabel *)view;
-    UILabel *copy = [[UILabel alloc] initWithFrame:orig.frame];
-    copy.text = orig.text;
-    copy.font = orig.font;
-    copy.textColor = orig.textColor;
-    copy.numberOfLines = orig.numberOfLines;
-    copy.textAlignment = orig.textAlignment;
-    copy.lineBreakMode = orig.lineBreakMode;
-    return copy;
+    UILabel *labelCopy = [[UILabel alloc] initWithFrame:orig.frame];
+    labelCopy.text = orig.text;
+    labelCopy.font = orig.font;
+    labelCopy.textColor = orig.textColor;
+    labelCopy.numberOfLines = orig.numberOfLines;
+    labelCopy.textAlignment = orig.textAlignment;
+    labelCopy.lineBreakMode = orig.lineBreakMode;
+    copy = labelCopy;
   }
-  // Fabric ParagraphTextView → clone text thay vì snapshot
   else if ([view isKindOfClass:NSClassFromString(@"RCTParagraphTextView")]) {
     UIView *snap = [view snapshotViewAfterScreenUpdates:NO];
     snap.frame = view.frame;
-    return snap;
+    copy = snap;
   }
-  // UIImageView
   else if ([view isKindOfClass:[UIImageView class]]) {
     UIImageView *orig = (UIImageView *)view;
-    UIImageView *copy = [[UIImageView alloc] initWithFrame:orig.frame];
-    copy.image = orig.image;
-    copy.contentMode = orig.contentMode;
-    copy.clipsToBounds = orig.clipsToBounds;
-    return copy;
+    UIImageView *imageCopy = [[UIImageView alloc] initWithFrame:orig.frame];
+    imageCopy.image = orig.image;
+    imageCopy.contentMode = orig.contentMode;
+    imageCopy.clipsToBounds = orig.clipsToBounds;
+    copy = imageCopy;
   }
-  // Default: container + children
   else {
-    UIView *copy = [[UIView alloc] initWithFrame:view.frame];
-    copy.backgroundColor = view.backgroundColor;
-    copy.layer.cornerRadius = view.layer.cornerRadius;
-    copy.clipsToBounds = view.clipsToBounds;
-    
+    UIView *containerCopy = [[UIView alloc] initWithFrame:view.frame];
+    containerCopy.backgroundColor = view.backgroundColor;
+    containerCopy.layer.cornerRadius = view.layer.cornerRadius;
+    containerCopy.clipsToBounds = view.clipsToBounds;
     for (UIView *child in view.subviews) {
       UIView *childCopy = [self _deepClone:child];
-      if (childCopy) [copy addSubview:childCopy];
+      if (childCopy) [containerCopy addSubview:childCopy];
     }
-    return copy;
+    copy = containerCopy;
   }
+  [self copyCommonPropsFrom:view to:copy];
+
+  return copy;
+}
+
+- (void)copyCommonPropsFrom:(UIView *)view to:(UIView *)copy {
+  copy.transform = view.transform;
+  copy.layer.masksToBounds = view.layer.masksToBounds;
+  copy.layer.cornerRadius = view.layer.cornerRadius;
+  copy.layer.borderColor = view.layer.borderColor;
+  copy.layer.borderWidth = view.layer.borderWidth;
+  copy.backgroundColor = view.backgroundColor;
+  
+  copy.alpha = view.alpha;
+  copy.hidden = view.hidden;
 }
 
 #pragma mark - Animate subviews
@@ -176,7 +192,6 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
     if ([ghostChild isKindOfClass:[UILabel class]]) {
       UILabel *ghostLabel = (UILabel *)ghostChild;
       UILabel *toLabel    = (UILabel *)toChild;
-
       [UIView animateWithDuration:_sharingAnimatedDuration
                        animations:^{
         ghostChild.frame = endFrame;
@@ -188,7 +203,6 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
     else if ([ghostChild isKindOfClass:[UIImageView class]]) {
       UIImageView *ghostImg = (UIImageView *)ghostChild;
       UIImageView *toImg    = (UIImageView *)toChild;
-
       [UIView animateWithDuration:_sharingAnimatedDuration
                        animations:^{
         ghostImg.frame = endFrame;

@@ -1,13 +1,41 @@
-# @rn-video/video-share-element
+# @rn-slv/react-native-shared-element
 
-A custom React Native video component with shared element transitions support.
+A custom React Native component for shared element transitions, supporting both **video** and **any view** (images, text, custom layouts).
+
+---
+
+
+
+## Features
+
+- Shared element transitions for video and any React Native view
+- Smooth, native-powered animations between screens
+- Full support for React Navigation (auto integration)
+- Exposes imperative methods for advanced control
+- TypeScript ready
+- All transitions and animations are handled fully on the native side (no JS overlays or hacks)
+
+---
+
+> **Note:**
+> The video component uses [KTVHTTPCache](https://github.com/ChangbaDevs/KTVHTTPCache) for advanced HTTP caching on **iOS**, and [OkHttp](https://square.github.io/okhttp/) for efficient networking on **Android**.
+
+---
+
+## Source
+
+GitHub: [https://github.com/LeVinhSang1234/React-Native-Shared-Element/tree/share-element](https://github.com/LeVinhSang1234/React-Native-Shared-Element/tree/share-element)
+
+---
+
+---
 
 ## Installation
 
 ```bash
-npm install @rn-video/video-share-element
+npm install @rn-slv/react-native-shared-element
 # or
-yarn add @rn-video/video-share-element
+yarn add @rn-slv/react-native-shared-element
 ```
 
 ### iOS
@@ -17,33 +45,72 @@ After installation, run pod install in the ios directory:
 ```bash
 cd ios && pod install
 ```
+---
+## Note: KTVHTTPCache iOS Build Fix
+
+If you encounter build errors related to `LONG_LONG_MAX` when building for iOS, the Podfile includes an automatic fix using the following script:
+
+```ruby
+files = `find Pods -name KTVHCRange.h`.split("\n")
+files.each do |file|
+  system("sed -i '' -e 's/LONG_LONG_MAX/LLONG_MAX/g' \"#{file}\"")
+end
+```
+Example:
+```ruby
+post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
+    )
+    files = `find Pods -name KTVHCRange.h`.split("\n")
+    files.each do |file|
+      system("sed -i '' -e 's/LONG_LONG_MAX/LLONG_MAX/g' \"#{file}\"")
+    end
+  end
+```
+---
+
 
 ### Android
 
-For Android, the native code will be automatically linked through autolinking.
+Native code is autolinked. No extra steps needed.
+
+---
+
+## Important Note for Navigation Patch
+
+If you are using React Navigation please add the following command to your app's `package.json`:
+
+```json
+"postinstall": "if [ -d ./node_modules/@react-navigation/core/lib/module ]; then cp ./node_modules/@rn-slv/react-native-shared-element/packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js; fi"
+```
+
+This ensures the navigation patch is always applied after installing dependencies.
+
+---
 
 ## Usage
 
+### Shared Video
+
 ```tsx
-import Video from '@rn-video/video-share-element';
+import {Video} from '@rn-slv/react-native-shared-element';
 
 <Video
   source={{ uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }}
-  loop
-  muted={false}
-  paused={false}
-  volume={0.8}
-  resizeMode="cover"
-  progressInterval={500}
-  onProgress={data => console.log(data)}
-  onEnd={() => console.log('Video ended')}
-  sharingAnimatedDuration={500}
   shareTagElement="myVideo"
-  hiddenWhenShareElement={true}
+  sharingAnimatedDuration={500}
+  // ...other props
 />
 ```
+---
 
 ## Props
+
+### Video
 
 | Prop                     | Type      | Default   | Description                                                                                   |
 |--------------------------|-----------|-----------|-----------------------------------------------------------------------------------------------|
@@ -55,11 +122,12 @@ import Video from '@rn-video/video-share-element';
 | `volume`                 | number    | `1`       | Set the video volume (range: `0` to `1`).                                                     |
 | `resizeMode`             | string    | `'contain'` | Video resize mode: `'contain'`, `'cover'`, `'stretch'`, `'center'`.                           |
 | `shareTagElement`        | string    |           | Tag for shared element transitions between video views.                                       |
-| `progressInterval`       | number    | `250`     | Interval (ms) for progress updates via `onProgress`.     |
-| `hiddenWhenShareElement` | boolean   | `true`    | Hide video when sharing as a shared element.                                                  |
-| `sharingAnimatedDuration`| number    | `350`     | Duration (ms) for shared element transition animation. Note: if React Navigation (via `@react-navigation/elements`) is present, the navigation/shared-element integration may override this value to match navigation transitions. |
+| `progressInterval`       | number    | `250`     | Interval (ms) for progress updates via `onProgress`.                                          |
+| `sharingAnimatedDuration`| number    | `350`     | Duration (ms) for shared element transition animation.<br>**Note:** If React Navigation is present, this value will be overridden by the screen animation duration from React Navigation. |
 
-## Event Props
+## Event Props (Video only)
+
+The following event props apply only to the `Video` component:
 
 | Prop           | Type      | Description                                                                 |
 |----------------|-----------|-----------------------------------------------------------------------------|
@@ -70,9 +138,11 @@ import Video from '@rn-video/video-share-element';
 | `onLoadStart`  | function  | Called when the video starts loading.                                       |
 | `onBuffering`  | function  | Called when the video starts or stops buffering.                            |
 
+---
+
 ## Imperative Methods (Ref)
 
-The Video component exposes imperative methods through ref:
+### Video
 
 ```tsx
 const videoRef = useRef<VideoRef>(null);
@@ -90,25 +160,63 @@ videoRef.current?.measure((data) => {
 });
 ```
 
-### VideoRef Methods
+### Shared View (any content)
 
-| Method                  | Parameters              | Description                                                                 |
-|-------------------------|-------------------------|-----------------------------------------------------------------------------|
-| `pause()`              | -                       | Pause video playback immediately                                           |
-| `resume()`             | -                       | Resume video playback from current position                                |
-| `seek(seconds)`        | `seconds: number`       | Seek to specific time position (in seconds)                                |
-| `measure(callback)`    | `callback: function`    | Measure component dimensions and position                                  |
+```tsx
+import {ShareView} from '@rn-slv/react-native-shared-element';
 
-## Requirements
+<ShareView shareTagElement="myView">
+  <Text style={{ fontSize: 24, color: 'tomato' }}>Hello Shared View</Text>
+  <Image source={require('./test.png')} style={{ width: 200, height: 120 }} />
+  {/* Any children except <Video> */}
+</ShareView>
+```
 
-- React >= 18.0.0
-- React Native >= 0.76.0
-- iOS >= 13.0
+> **Note:**
+> `ShareView` does **not** support embedding a `<Video>` component inside it. Please use `ShareView` for images, text, and other standard React Native views only.
 
+
+| Prop                     | Type      | Default   | Description                                                                                   |
+|--------------------------|-----------|-----------|-----------------------------------------------------------------------------------------------|
+| `shareTagElement`        | string    |           | Tag for shared element transitions between views.                                             |
+| `sharingAnimatedDuration`| number    | `350`     | Duration (ms) for shared element transition animation.<br>**Note:** If React Navigation is present, this value will be overridden by the screen animation duration from React Navigation. |
+| `children`               | ReactNode |           | Any React Native view(s) to be shared.                                                        |
+
+---
+
+```tsx
+const shareViewRef = useRef<ShareViewRef>(null);
+
+<ShareView ref={shareViewRef} shareTagElement="myView">
+  {/* ... */}
+</ShareView>
+
+// Prepare for recycling (advanced)
+await shareViewRef.current?.prepareForRecycle();
+```
+
+> **Note:**  
+> Shared element transitions can work between any two tags on the same screen, not just between screens or with react-navigation. You can trigger a shared transition between two `shareTagElement` values anywhere in your UI.  
+>  
+> The `prepareForRecycle` method is designed specifically to address an Android limitation:  
+> When navigating back on Android, the content of the previous screen may be destroyed or lost before the shared element transition can occur.  
+> By calling `prepareForRecycle()` manually **before** triggering a back navigation in React Native, you ensure that the shared content is preserved and can be animated smoothly during the transition.  
+>  
+> **Usage:**  
+> - You are **not required** to call this method. If you don't call it, the shared element transition will not run and the screen will just go back as normal.  
+> - If you want to ensure the shared element effect works on Android when going back, call `await shareViewRef.current?.prepareForRecycle();` right before navigating back (e.g. in your custom back handler or before calling `navigation.goBack()`).
+> - Not needed on iOS, but safe to call on both platforms.
+
+---
 ## License
 
 MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## Author
 
-Sang Le lsang2884@gmail.com
+Sang Le (lsang2884@gmail.com)
+
+
+<video src="https://github.com/user-attachments/assets/24d59a51-fd69-41c0-b299-1e031c982607" controls width="400"></video>

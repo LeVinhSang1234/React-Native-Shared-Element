@@ -45,6 +45,8 @@ using namespace facebook::react;
 
 // Other refs
 @property (nonatomic, strong) UIImageView *posterView;
+@property (nonatomic, copy)   NSString *posterResizeMode;
+
 @property (nonatomic, strong, nullable) RCTVideoView *otherView;
 
 // Routing
@@ -74,6 +76,7 @@ using namespace facebook::react;
 
 - (instancetype)init {
   if (self = [super init]) {
+    self.hidden = YES;
     _videoManager  = [[RCTVideoManager alloc] init];
     _videoOverlay  = [[RCTVideoOverlay alloc] init];
     [UINavigationController rn_enablePopHookOnce];
@@ -107,7 +110,6 @@ using namespace facebook::react;
       // Nếu paused + chưa từng play → giữ poster, ngược lại ẩn
       self.posterView.hidden = YES;
     };
-    self.hidden = YES;
   }
   [UIViewController rn_swizzleBackLifeIfNeeded];
   return self;
@@ -152,6 +154,8 @@ using namespace facebook::react;
   [_videoManager applyOnLoad:p.enableOnLoad];
   [_videoManager applyLoop:p.loop skipCheck:NO];
   
+  [self applyPosterResizeMode:p.posterResizeMode.empty() ? @"" : [NSString stringWithUTF8String:p.posterResizeMode.c_str()]];
+  
   NSString *posterStr = p.poster.empty() ? nil : [NSString stringWithUTF8String:p.poster.c_str()];
   [_videoManager applyPoster:posterStr ?: @""];
   
@@ -159,6 +163,22 @@ using namespace facebook::react;
   _headerHeight = p.headerHeight;
   
   [super updateProps:props oldProps:oldProps];
+}
+
+
+- (void)applyPosterResizeMode:(NSString *)posterResizeMode {
+  if ([posterResizeMode isEqualToString:_posterResizeMode]) return;
+  _posterResizeMode = posterResizeMode;
+  
+  if ([_posterResizeMode isEqualToString:@"contain"]) {
+    _posterView.contentMode = UIViewContentModeScaleAspectFit;
+  } else if ([_posterResizeMode isEqualToString:@"cover"]) {
+    _posterView.contentMode = UIViewContentModeScaleAspectFill;
+  } else if ([_posterResizeMode isEqualToString:@"stretch"]) {
+    _posterView.contentMode = UIViewContentModeScaleToFill;
+  } else if ([_posterResizeMode isEqualToString:@"center"]) {
+    _posterView.contentMode = UIViewContentModeCenter;
+  } else _posterView.contentMode = UIViewContentModeScaleAspectFill;
 }
 
 #pragma mark - Layout
@@ -260,10 +280,7 @@ using namespace facebook::react;
   [super prepareForRecycle];
   // Chỉ auto-trả player nếu KHÔNG có navigation
   if (!_sharing) [self _performBackSharedElementIfPossible];
-  else {
-    [self willUnmount];
-    [self didUnmount];
-  }
+  [self willUnmount];
   _posterView.image = nil;
   _posterView.hidden = YES;
 }
@@ -321,6 +338,8 @@ using namespace facebook::react;
   _otherView = [self getOtherViewForShare];
   if (_otherView) {
     [self _performSharedTransitionFrom:self to:_otherView direction:RCTVideoTransitionDirectionBackward];
+  } else {
+    [self didUnmount];
   }
 }
 

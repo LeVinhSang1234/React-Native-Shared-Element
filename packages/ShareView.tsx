@@ -28,7 +28,6 @@ type TNativeRef = React.ComponentRef<typeof ShareViewNativeComponent>;
 export interface ShareViewProps
   extends Omit<ShareViewNativeProps, 'headerHeight'> {}
 
-// 👉 Đây là type ref export ra cho dev dùng
 export interface ShareViewRef extends View {
   prepareForRecycle: () => Promise<void>;
 }
@@ -47,7 +46,7 @@ const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
         if (nativeRef.current) {
           Commands.prepareForRecycle(nativeRef.current);
         }
-        setTimeout(() => res(null), 0);
+        setTimeout(() => res(null), 10);
       });
     }, []);
 

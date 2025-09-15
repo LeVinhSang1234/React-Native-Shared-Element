@@ -74,6 +74,16 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
         view.setSharingAnimatedDuration(value)
     }
 
+    @ReactProp(name = "poster")
+    fun setPoster(view: RCTVideoView, poster: String?) {
+        view.setPoster(poster)
+    }
+
+    @ReactProp(name = "posterResizeMode")
+    fun setPosterResizeMode(view: RCTVideoView, mode: String?) {
+        view.setPosterResizeMode(mode)
+    }
+
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {
         when (commandId) {
             "initialize" -> view.initializeFromCommand()

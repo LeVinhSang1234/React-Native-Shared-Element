@@ -44,6 +44,7 @@ export interface VideoNativeProps extends ViewProps {
   readonly seek?: Double;
   readonly volume?: Double;
   readonly resizeMode?: string;
+  readonly posterResizeMode?: string;
   readonly shareTagElement?: string;
   readonly progressInterval?: Double;
   readonly headerHeight?: Double;

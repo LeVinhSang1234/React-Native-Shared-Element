@@ -81,10 +81,7 @@ using namespace facebook::react;
 - (void)prepareForRecycle {
   [super prepareForRecycle];
   if (!_sharing) [self _performBackSharedElementIfPossible];
-  else {
-    [self willUnmount];
-    [self didUnmount];
-  }
+  [self willUnmount];
 }
 
 - (void)dealloc {
@@ -211,6 +208,8 @@ using namespace facebook::react;
   _otherView = [self getOtherViewForShare];
   if (_otherView) {
     [self _performSharedTransitionFrom:self to:_otherView direction:RCTShareViewTransitionDirectionBackward];
+  } else {
+    [self didUnmount];
   }
 }
 
@@ -242,9 +241,6 @@ using namespace facebook::react;
   
   fromFrame.origin.y += fromView.headerHeight;
   toFrame.origin.y   += toView.headerHeight;
-  
-  toView.hidden = YES;
-  fromView.hidden = YES;
   
   RN_WEAKIFY(fromView)
   RN_WEAKIFY(toView)
