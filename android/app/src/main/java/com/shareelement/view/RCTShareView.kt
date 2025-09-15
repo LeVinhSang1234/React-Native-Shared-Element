@@ -2,9 +2,12 @@ package com.shareelement.view
 
 import android.content.Context
 import android.graphics.Rect
+import android.os.Build
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
+import androidx.core.view.isEmpty
 import com.facebook.react.views.view.ReactViewGroup
 import com.shareelement.view.helpers.RCTShareRouteRegistry
 import com.shareelement.view.helpers.RCTShareViewOverlay
@@ -38,6 +41,7 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
         alpha = 0f
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (isBlurWindow) {
@@ -46,15 +50,11 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
         startSharedElementTransition()
     }
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        cleanup()
-    }
-
     fun initialize() {}
 
+    @RequiresApi(Build.VERSION_CODES.P)
     fun prepareForRecycle() {
-        cleanup()
+        performBackSharedElementIfPossible()
     }
 
     private fun cleanup() {
@@ -63,6 +63,36 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
         overlay.didUnmount()
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun performBackSharedElementIfPossible() {
+        val tag = shareTagElement ?: return
+        val target = RCTShareRouteRegistry.resolveShareTargetForView(this, tag)
+
+        if (target == null || isEmpty()) {
+            cleanup()
+            return
+        }
+        val fromRect = rectForShare(this)
+        val toRect = rectForShare(target)
+
+        val duration = (sharingAnimatedDuration ?: 300.0).toLong()
+        target.overlay.moveToOverlay(
+            fromFrame = fromRect,
+            toFrame = toRect,
+            fromView = this,
+            toView = target,
+            duration = duration,
+            onTarget = {
+                target.alpha = 1f;
+            },
+            onCompleted = {
+                cleanup()
+            }
+        )
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.P)
     private fun startSharedElementTransition() {
         val tag = shareTagElement ?: return
         val target = RCTShareRouteRegistry.resolveShareTargetForView(this, tag)
@@ -72,22 +102,24 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
             return
         }
         post {
-            val fromRect = rectForShare(target)
-            val toRect = rectForShare(this)
+            postDelayed({
+                val fromRect = rectForShare(target)
+                val toRect = rectForShare(this)
 
-            val duration = (target.sharingAnimatedDuration ?: 300.0).toLong()
-            target.overlay.moveToOverlay(
-                fromFrame = fromRect,
-                toFrame = toRect,
-                fromView = target,
-                toView = this,
-                duration = duration,
-                onTarget = {
-                    target.alpha = 1f;
-                    alpha = 1f;
-                },
-                onCompleted = { Log.d("RCTShareView", "Completed transition for tag=$tag") }
-            )
+                val duration = (sharingAnimatedDuration ?: 300.0).toLong()
+                overlay.moveToOverlay(
+                    fromFrame = fromRect,
+                    toFrame = toRect,
+                    fromView = target,
+                    toView = this,
+                    duration = duration,
+                    onTarget = {
+                        target.alpha = 1f;
+                        alpha = 1f;
+                    },
+                    onCompleted = {}
+                )
+            }, 5)
         }
     }
 

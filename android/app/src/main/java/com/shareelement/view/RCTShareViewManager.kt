@@ -1,5 +1,10 @@
 package com.shareelement.view
 
+import android.os.Build
+import android.util.Log
+import android.view.View
+import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
@@ -10,6 +15,12 @@ class RCTShareViewManager : ViewGroupManager<RCTShareView>() {
 
     override fun createViewInstance(reactContext: ThemedReactContext) = RCTShareView(reactContext)
 
+    @RequiresApi(Build.VERSION_CODES.P)
+    override fun onDropViewInstance(view: RCTShareView) {
+        view.prepareForRecycle()
+        super.onDropViewInstance(view)
+    }
+
     @ReactProp(name = "shareTagElement")
     fun setShareTagElement(view: RCTShareView, value: String?) { view.shareTagElement = value }
 
@@ -19,6 +30,7 @@ class RCTShareViewManager : ViewGroupManager<RCTShareView>() {
     @ReactProp(name = "sharingAnimatedDuration")
     fun setSharingAnimatedDuration(view: RCTShareView, value: Float) { view.sharingAnimatedDuration = value.toDouble() }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun receiveCommand(view: RCTShareView, commandId: String, args: ReadableArray?) {
         when (commandId) {
             "initialize" -> view.initialize()
