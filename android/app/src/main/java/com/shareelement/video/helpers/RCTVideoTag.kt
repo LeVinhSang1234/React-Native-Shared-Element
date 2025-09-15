@@ -1,4 +1,4 @@
-package com.shareelement.helpers
+package com.shareelement.video.helpers
 
 import com.shareelement.video.RCTVideoView
 import java.lang.ref.WeakReference

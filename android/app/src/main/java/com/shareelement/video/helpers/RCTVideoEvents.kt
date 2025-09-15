@@ -1,4 +1,4 @@
-package com.shareelement.helpers
+package com.shareelement.video.helpers
 
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.uimanager.events.Event

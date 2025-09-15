@@ -2,6 +2,7 @@
 import {
   forwardRef,
   memo,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -27,32 +28,53 @@ type TNativeRef = React.ComponentRef<typeof ShareViewNativeComponent>;
 export interface ShareViewProps
   extends Omit<ShareViewNativeProps, 'headerHeight'> {}
 
-const ShareView = forwardRef<View, ShareViewProps>((props, ref: Ref<View>) => {
-  const nativeRef = useRef<TNativeRef>(null);
+// 👉 Đây là type ref export ra cho dev dùng
+export interface ShareViewRef extends View {
+  prepareForRecycle: () => Promise<void>;
+}
 
-  let headerHeight: number = 0;
-  try {
-    headerHeight = useHeaderHeight();
-  } catch {}
+const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
+  (props, ref: Ref<ShareViewRef>) => {
+    const nativeRef = useRef<TNativeRef>(null);
 
-  useImperativeHandle(
-    ref,
-    () => nativeRef.current as React.ComponentRef<typeof View>,
-    [],
-  );
+    let headerHeight: number = 0;
+    try {
+      headerHeight = useHeaderHeight();
+    } catch {}
 
-  useEffect(() => {
-    if (nativeRef.current) Commands.initialize(nativeRef.current);
-  }, []);
+    const prepareForRecycle = useCallback(async () => {
+      return new Promise(res => {
+        if (nativeRef.current) {
+          Commands.prepareForRecycle(nativeRef.current);
+        }
+        setTimeout(() => res(null), 0);
+      });
+    }, []);
 
-  return (
-    <ShareViewNativeComponent
-      {...props}
-      ref={nativeRef}
-      headerHeight={headerHeight}
-    />
-  );
-});
+    useImperativeHandle(
+      ref,
+      () => {
+        return {
+          ...(nativeRef.current as unknown as View),
+          prepareForRecycle,
+        } as ShareViewRef;
+      },
+      [prepareForRecycle],
+    );
+
+    useEffect(() => {
+      if (nativeRef.current) Commands.initialize(nativeRef.current);
+    }, []);
+
+    return (
+      <ShareViewNativeComponent
+        {...props}
+        ref={nativeRef}
+        headerHeight={headerHeight}
+      />
+    );
+  },
+);
 
 ShareView.displayName = 'ShareView';
 

@@ -23,16 +23,16 @@ import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.ReactContext
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.UIManagerHelper
-import com.shareelement.helpers.HttpStack
-import com.shareelement.helpers.OnBufferingEvent
-import com.shareelement.helpers.OnEndEvent
-import com.shareelement.helpers.OnErrorEvent
-import com.shareelement.helpers.OnLoadStartEvent
-import com.shareelement.helpers.RCTVideoErrorUtils
-import com.shareelement.helpers.RCTVideoLayoutUtils
-import com.shareelement.helpers.RCTVideoOverlay
-import com.shareelement.helpers.RCTVideoTag
-import com.shareelement.helpers.RCTVideoTickers
+import com.shareelement.video.helpers.HttpStack
+import com.shareelement.video.helpers.OnBufferingEvent
+import com.shareelement.video.helpers.OnEndEvent
+import com.shareelement.video.helpers.OnErrorEvent
+import com.shareelement.video.helpers.OnLoadStartEvent
+import com.shareelement.video.helpers.RCTVideoErrorUtils
+import com.shareelement.video.helpers.RCTVideoLayoutUtils
+import com.shareelement.video.helpers.RCTVideoOverlay
+import com.shareelement.video.helpers.RCTVideoTag
+import com.shareelement.video.helpers.RCTVideoTickers
 import kotlin.math.max
 import kotlin.math.roundToInt
 
