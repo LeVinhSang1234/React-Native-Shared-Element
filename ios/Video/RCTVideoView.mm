@@ -260,10 +260,7 @@ using namespace facebook::react;
   [super prepareForRecycle];
   // Chỉ auto-trả player nếu KHÔNG có navigation
   if (!_sharing) [self _performBackSharedElementIfPossible];
-  else {
-    [self willUnmount];
-    [self didUnmount];
-  }
+  [self willUnmount];
   _posterView.image = nil;
   _posterView.hidden = YES;
 }
@@ -321,6 +318,8 @@ using namespace facebook::react;
   _otherView = [self getOtherViewForShare];
   if (_otherView) {
     [self _performSharedTransitionFrom:self to:_otherView direction:RCTVideoTransitionDirectionBackward];
+  } else {
+    [self didUnmount];
   }
 }
 

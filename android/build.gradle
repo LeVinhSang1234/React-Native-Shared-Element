@@ -1,21 +1,114 @@
-buildscript {
-    ext {
-        buildToolsVersion = "36.0.0"
-        minSdkVersion = 24
-        compileSdkVersion = 36
-        targetSdkVersion = 36
-        ndkVersion = "27.1.12297006"
-        kotlinVersion = "2.1.20"
-    }
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle")
-        classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
-    }
+// android/build.gradle (module: rn-video_video-share-element)
+
+def getExtOrDefault(name, defaultValue) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : defaultValue
 }
 
-apply plugin: "com.facebook.react.rootproject"
+def isNewArchitectureEnabled() {
+  // Bật New Arch bằng 1 trong các cách:
+  // - gradle.properties: newArchEnabled=true
+  // - tham số dòng lệnh: -PnewArchEnabled=true
+  // - env var: ORG_GRADLE_PROJECT_newArchEnabled=true
+  return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+// Chỉ apply plugin react khi bật New Arch (giống safe-area-context)
+if (isNewArchitectureEnabled()) {
+  apply plugin: "com.facebook.react"
+}
+
+android {
+  // dùng namespace đúng với package của lib
+  namespace "com.shareelement"
+
+  // lấy từ root nếu có, mặc định 36 (RN 0.81 dùng 35/34/36 đều OK)
+  compileSdkVersion getExtOrDefault('compileSdkVersion', 36)
+
+  defaultConfig {
+    minSdkVersion     getExtOrDefault('minSdkVersion', 24)
+    targetSdkVersion  getExtOrDefault('targetSdkVersion', 36)
+
+    // Flag cho code có thể dùng nếu cần
+    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+
+    // Kiến trúc RN (giống template RN)
+    ndk {
+      abiFilters (*reactNativeArchitectures())
+    }
+
+    consumerProguardFiles 'consumer-rules.pro'
+  }
+
+  // Java 17 cho AGP 8.x/RN 0.81
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+
+  // Tránh đụng thư viện render *.so khi build lib (mẫu từ safe-area-context)
+  packagingOptions {
+    exclude "**/libreact_render*.so"
+  }
+
+  // Giống safe-area-context: tách sourceSets cho Fabric/Paper
+  sourceSets.main {
+    java {
+      if (isNewArchitectureEnabled()) {
+        srcDirs += [
+          "src/fabric/java",
+          "${project.buildDir}/generated/source/codegen/java"
+        ]
+      } else {
+        srcDirs += [
+          "src/paper/java",
+          "src/main/java"
+        ]
+      }
+    }
+    // đảm bảo có AndroidManifest.xml tối thiểu trong src/main/AndroidManifest.xml
+    manifest.srcFile "src/main/AndroidManifest.xml"
+  }
+}
+
+// giữ nguyên helper như RN template
+def reactNativeArchitectures() {
+  def value = project.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : [
+    "armeabi-v7a",
+    "x86",
+    "x86_64",
+    "arm64-v8a"
+  ]
+}
+
+repositories {
+  google()
+  mavenCentral()
+  // BẮT BUỘC cho RN: trỏ vào RN Android maven (để resolve react-android, codegen, v.v.)
+  maven { url "$rootDir/../node_modules/react-native/android" }
+}
+
+dependencies {
+  // Safe-area-context dùng implementation; bạn có thể dùng compileOnly để tránh kéo trùng vào app.
+  // Ở đây theo "kiểu" mẫu thì để implementation:
+  implementation 'com.facebook.react:react-android'
+
+  // Kotlin stdlib
+  def kotlin_version = getExtOrDefault('kotlinVersion', "2.0.0")
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+  // Nếu lib có dùng Media3/OkHttp như phần Android player trước đó:
+  implementation "androidx.media3:media3-exoplayer:1.8.0"
+  implementation "androidx.media3:media3-ui:1.8.0"
+  implementation "androidx.media3:media3-common:1.8.0"
+  implementation "androidx.media3:media3-datasource-okhttp:1.8.0"
+  implementation "com.squareup.okhttp3:okhttp:5.1.0"
+  implementation "com.squareup.okhttp3:logging-interceptor:5.1.0"
+  implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:5.1.0"
+}

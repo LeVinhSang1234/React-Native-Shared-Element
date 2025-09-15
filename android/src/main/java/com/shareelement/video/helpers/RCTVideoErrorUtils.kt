@@ -1,4 +1,4 @@
-package com.sharevideo.helpers
+package com.shareelement.video.helpers
 
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.HttpDataSource

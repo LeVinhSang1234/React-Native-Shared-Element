@@ -1,4 +1,4 @@
-package com.sharevideo.video
+package com.shareelement.video
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
