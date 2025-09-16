@@ -1,0 +1,49 @@
+{
+  "name": "@rn-sanglv/react-native-shared-element",
+  "version": "1.0.0",
+  "description": "A custom React Native video, view component with shared element transitions",
+  "main": "index.ts",
+  "types": "index.ts",
+  "files": [
+    "index.ts",
+    "packages/",
+    "natives/",
+    "rn-shared-element.podspec",
+    "ios/Video/",
+    "ios/View/",
+    "ios/common/",
+    "ios/navigation/",
+    "android/src/main/java/com/shareelement/view/",
+    "android/src/main/java/com/shareelement/video/",
+    "android/build.gradle"
+  ],
+  "scripts": {
+    "postinstall": "if [ -d ./node_modules/@react-navigation/core/lib/module ]; then cp ./packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js; fi"
+  },
+  "keywords": [
+    "react-native",
+    "video",
+    "player",
+    "shared-element",
+    "transition"
+  ],
+  "author": "Sang Le",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "codegenConfig": {
+    "name": "ShareElement",
+    "type": "all",
+    "jsSrcsDir": "natives",
+    "android": {
+      "javaPackageName": "com.shareelement"
+    },
+    "ios": {
+      "componentProvider": {
+        "Video": "RCTVideoView",
+        "ShareView": "RCTShareView"
+      }
+    }
+  }
+}
