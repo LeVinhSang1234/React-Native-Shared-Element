@@ -1,4 +1,4 @@
-package com.sharevideo.helpers
+package com.shareelement.video.helpers
 
 import android.graphics.Rect
 import kotlin.math.max

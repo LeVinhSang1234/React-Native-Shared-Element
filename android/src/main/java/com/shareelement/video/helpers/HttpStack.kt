@@ -1,4 +1,4 @@
-package com.sharevideo.helpers
+package com.shareelement.video.helpers
 
 import android.content.Context
 import android.net.ConnectivityManager
