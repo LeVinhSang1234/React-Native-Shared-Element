@@ -22,6 +22,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// Lấy window đang hiển thị (multi-scene an toàn)
 + (UIWindow * _Nullable)getTargetWindow;
 
++ (void)applyMaxSizeCache:(NSUInteger)maxSizeMB;
+
 @end
 
 NS_ASSUME_NONNULL_END

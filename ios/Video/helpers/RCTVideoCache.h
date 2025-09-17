@@ -10,7 +10,9 @@ NS_ASSUME_NONNULL_BEGIN
 @interface RCTVideoCache : NSObject
 
 +(void)VC_StartProxy;
++(void)VC_ConfigureCache:(NSUInteger)maxSizeMB;
 +(void)VC_PrefetchHead:(NSURL *) url seconds:(double) seconds bitratebps:(double) bitratebps;
++(void)trimCacheIfNeeded;
 
 @end
 NS_ASSUME_NONNULL_END

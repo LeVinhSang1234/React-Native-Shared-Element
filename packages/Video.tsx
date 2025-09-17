@@ -42,12 +42,15 @@ export interface VideoProps
     | 'poster'
     | 'posterResizeMode'
     | 'hiddenWhenShareElement'
+    | 'cacheMaxSize'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   posterResizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   source?: string | { uri: string } | number;
   poster?: string | { uri: string } | number;
 }
+
+const config = { cacheMaxSize: 300 };
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   const { source, poster, progressInterval = 250, volume = 1, ...p } = props;
@@ -95,9 +98,14 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       volume={volume}
       hiddenWhenShareElement
       headerHeight={headerHeight}
+      cacheMaxSize={config.cacheMaxSize}
     />
   );
 });
+
+export function setCacheMaxSize(size: number = 300) {
+  config.cacheMaxSize = size;
+}
 
 Video.displayName = 'Video';
 

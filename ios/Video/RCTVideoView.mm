@@ -160,6 +160,8 @@ using namespace facebook::react;
   [_videoManager applyOnLoad:p.enableOnLoad];
   [_videoManager applyLoop:p.loop skipCheck:NO];
   
+  [RCTVideoHelper applyMaxSizeCache:p.cacheMaxSize];
+  
   [self applyPosterResizeMode:p.posterResizeMode.empty() ? @"" : [NSString stringWithUTF8String:p.posterResizeMode.c_str()]];
   
   NSString *posterStr = p.poster.empty() ? nil : [NSString stringWithUTF8String:p.poster.c_str()];

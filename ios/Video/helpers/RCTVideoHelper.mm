@@ -10,11 +10,15 @@
 #pragma mark - Constants
 
 static NSString * const kPosterCacheDirName = @"video_posters";
-static NSTimeInterval const kPosterMaxAge   = 24 * 60 * 60; // 1 ngày
+static NSTimeInterval const kPosterMaxAge   = 6 * 60 * 60; // 6h
 
 @implementation RCTVideoHelper
 
 #pragma mark - Video URL / Poster
+
++ (void)applyMaxSizeCache:(NSUInteger)sizeMB {
+  [RCTVideoCache VC_ConfigureCache:sizeMB];
+}
 
 + (nullable NSURL *)createVideoURL:(NSString *)source {
   if (source.length == 0) return nil;
@@ -24,6 +28,7 @@ static NSTimeInterval const kPosterMaxAge   = 24 * 60 * 60; // 1 ngày
     if (!url) return nil;
     
     [RCTVideoCache VC_StartProxy];
+    [RCTVideoCache trimCacheIfNeeded];
     [RCTVideoCache VC_PrefetchHead:url seconds:5.0 bitratebps:10e6];
     
     NSURL *proxyURL = [KTVHTTPCache proxyURLWithOriginalURL:url];

@@ -41,6 +41,7 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
     var player: ExoPlayer? = null
     private var videoW = 0
     private var videoH = 0
+    private var currentAnimator: ValueAnimator? = null
 
     init {
         clipToPadding = true
@@ -191,13 +192,13 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
 
         // add vào root và đảm bảo luôn ở top
         if (parent == null) root.addView(this, lp)
-        root.updateViewLayout(this, lp)
+        // root.updateViewLayout(this, lp)
+        safeAddOrUpdate(root, this, lp)
         ensureOnTop(root, this)
 
         // tick để child bám theo bounds trong lúc animate
         startTicking()
         onTick() // layout ngay frame đầu
-
         // animate position + size (updateViewLayout mỗi frame)
         animateRectViaLp(root, this, fromFrame, targetFrame, sharingAnimatedDurationMs) {
             // đảm bảo layout lần cuối
@@ -213,6 +214,18 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
                     },
                     100
             )
+        }
+    }
+
+    private fun safeAddOrUpdate(root: ViewGroup?, view: View, lp: FrameLayout.LayoutParams) {
+        try {
+            if (root == null) return
+            if (view.parent == null) {
+                root.addView(view, lp)
+            } else if (view.parent === root && view.isAttachedToWindow) {
+                root.updateViewLayout(view, lp)
+            }
+        } catch (_: Exception) {
         }
     }
 
@@ -242,7 +255,7 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
         val act: Activity? =
                 when (val ctx = context) {
                     is Activity -> ctx
-                    is ReactContext -> (ctx as ReactContext).currentActivity
+                    is ReactContext -> ctx.currentActivity
                     else -> null
                 }
         // Ưu tiên android.R.id.content để nằm trên ReactRootView; fallback decorView
@@ -278,13 +291,16 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
         lp.height = from.height()
         overlay.x = from.left.toFloat()
         overlay.y = from.top.toFloat()
-        root.updateViewLayout(overlay, lp)
+        //root.updateViewLayout(overlay, lp)
+        safeAddOrUpdate(root, overlay, lp)
         ensureOnTop(root, overlay)
 
         overlay.setLayerType(LAYER_TYPE_HARDWARE, null)
 
         val eval = RectEvaluator()
-        ValueAnimator.ofObject(eval, Rect(from), Rect(to))
+        currentAnimator?.cancel()
+
+        currentAnimator = ValueAnimator.ofObject(eval, Rect(from), Rect(to))
                 .apply {
                     duration = durationMs
                     interpolator = DecelerateInterpolator()
@@ -294,7 +310,8 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
                         overlay.y = r.top.toFloat()
                         lp.width = r.width()
                         lp.height = r.height()
-                        root.updateViewLayout(overlay, lp)
+                        // root.updateViewLayout(overlay, lp)
+                        safeAddOrUpdate(root, overlay, lp)
                         // đảm bảo nằm trên cùng trong suốt quá trình animate
                         ensureOnTop(root, overlay)
                     }
@@ -311,7 +328,7 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
                             }
                     )
                 }
-                .start()
+        currentAnimator?.start()
     }
 
     // giữ aspect kể cả khi parent tự layout lại ngoài animation

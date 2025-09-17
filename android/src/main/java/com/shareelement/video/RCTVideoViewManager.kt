@@ -1,12 +1,17 @@
 package com.shareelement.video
 
+import android.view.View
 import com.facebook.react.bridge.ReadableArray
-import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.shareelement.video.helpers.HttpStack
 
-class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
+class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
     override fun getName() = "RCTVideo"
+
+    private var lastCacheSizeMB: Int = 300
+
 
     override fun createViewInstance(reactContext: ThemedReactContext): RCTVideoView {
         return RCTVideoView(reactContext)
@@ -15,6 +20,22 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     override fun onDropViewInstance(view: RCTVideoView) {
         super.onDropViewInstance(view)
         view.dealloc()
+    }
+
+    override fun addView(parent: RCTVideoView, child: View, index: Int) {
+        parent.reactLayer.addView(child, index)
+    }
+
+    override fun removeViewAt(parent: RCTVideoView, index: Int) {
+        parent.reactLayer.removeViewAt(index)
+    }
+
+    override fun getChildCount(parent: RCTVideoView): Int {
+        return parent.reactLayer.childCount
+    }
+
+    override fun getChildAt(parent: RCTVideoView, index: Int): View {
+        return parent.reactLayer.getChildAt(index)
     }
 
     @ReactProp(name = "source")
@@ -72,6 +93,29 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     @ReactProp(name = "sharingAnimatedDuration", defaultFloat = 0f)
     fun setSharingAnimatedDuration(view: RCTVideoView, value: Float) {
         view.setSharingAnimatedDuration(value)
+    }
+
+    @ReactProp(name = "poster")
+    fun setPoster(view: RCTVideoView, poster: String?) {
+        view.setPoster(poster)
+    }
+
+    @ReactProp(name = "posterResizeMode")
+    fun setPosterResizeMode(view: RCTVideoView, mode: String?) {
+        view.setPosterResizeMode(mode)
+    }
+
+    @ReactProp(name = "cacheMaxSize", defaultInt = 300)
+    fun setCacheMaxSize(view: RCTVideoView, sizeMB: Int) {
+        if (sizeMB != lastCacheSizeMB) {
+            lastCacheSizeMB = sizeMB
+            val ctx = view.context
+            HttpStack.reset()
+            HttpStack.get(
+                ctx,
+                HttpStack.Options(cacheSizeBytes = sizeMB.toLong() * 1024 * 1024)
+            )
+        }
     }
 
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {

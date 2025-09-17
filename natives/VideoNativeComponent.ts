@@ -58,6 +58,7 @@ export interface VideoNativeProps extends ViewProps {
   readonly onProgress?: BubblingEventHandler<OnProgressData>;
   readonly onLoadStart?: BubblingEventHandler<OnLoadStartData>;
   readonly onBuffering?: BubblingEventHandler<OnBufferingData>;
+  readonly cacheMaxSize?: Double;
 }
 
 interface NativeCommands {

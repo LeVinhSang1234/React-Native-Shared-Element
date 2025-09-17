@@ -1,6 +1,8 @@
-import Video from './packages/Video';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import Video, { setCacheMaxSize } from './packages/Video';
+
+setCacheMaxSize(300);
 
 function App() {
   return <AppContent />;

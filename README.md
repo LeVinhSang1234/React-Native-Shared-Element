@@ -63,7 +63,6 @@ post_install do |installer|
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
     )
     files = `find Pods -name KTVHCRange.h`.split("\n")
     files.each do |file|
@@ -95,6 +94,18 @@ This ensures the navigation patch is always applied after installing dependencie
 ## Usage
 
 # Shared Video
+
+You can change the video cache size limit by calling the function `setCacheMaxSize(size: number)` (unit: MB), imported from the package. The default is 300MB.
+
+**Tip:** Call `setCacheMaxSize` as early as possible in your app (ideally before any video is loaded) to ensure the cache limit is applied correctly.
+
+Example:
+```tsx
+import { Video, setCacheMaxSize } from '@rn-slv/react-native-shared-element';
+
+// Set maximum cache size to 500MB
+setCacheMaxSize(500);
+```
 
 ```tsx
 import {Video} from '@rn-slv/react-native-shared-element';
@@ -189,8 +200,9 @@ import {ShareView} from '@rn-slv/react-native-shared-element';
 </ShareView>
 ```
 
+
 > **Note:**
-> `ShareView` does **not** support embedding a `<Video>` component inside it. Please use `ShareView` for images, text, and other standard React Native views only.
+> You can place a `<Video>` component inside a `ShareView`, but `ShareView` itself will not share the video as a shared element. If you want to share the video, use the `shareTagElement` prop directly on the `<Video>` component. For images, text, and other standard React Native views, you can use `ShareView` as usual.
 
 
 | Prop                     | Type      | Default   | Description                                                                                   |

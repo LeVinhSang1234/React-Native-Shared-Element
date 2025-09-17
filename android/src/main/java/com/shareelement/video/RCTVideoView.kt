@@ -1,12 +1,16 @@
 package com.shareelement.video
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.annotation.OptIn
 import androidx.core.view.ViewCompat
 import androidx.media3.common.MediaItem
@@ -33,6 +37,7 @@ import com.shareelement.video.helpers.RCTVideoLayoutUtils
 import com.shareelement.video.helpers.RCTVideoOverlay
 import com.shareelement.video.helpers.RCTVideoTag
 import com.shareelement.video.helpers.RCTVideoTickers
+import java.net.URL
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -48,6 +53,11 @@ class RCTVideoView : FrameLayout {
 
     // UI
     internal lateinit var playerView: PlayerView
+    private lateinit var posterView: ImageView
+    private var posterBitmap: Bitmap? = null
+
+    private var posterResizeMode: String = "cover"
+
     private var overlay: RCTVideoOverlay? = null
 
     // Player
@@ -94,6 +104,8 @@ class RCTVideoView : FrameLayout {
     private var isBlurWindow = false
 
     private var cacheRect: Rect? = null
+
+    val reactLayer = FrameLayout(context)
 
     private val trc: ThemedReactContext?
         get() = context as? ThemedReactContext
@@ -147,6 +159,14 @@ class RCTVideoView : FrameLayout {
                     setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
                 }
         addView(playerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        posterView = ImageView(context).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            visibility = GONE
+            isClickable = false
+            isFocusable = false
+        }
+        addView(posterView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        addView(reactLayer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         alpha = 0f
         player =
                 buildPlayer().also { p ->
@@ -220,6 +240,7 @@ class RCTVideoView : FrameLayout {
         super.onAttachedToWindow()
         if (isBlurWindow) {
             isBlurWindow = false
+            alpha = 1f
             return
         }
         playerView.player = player
@@ -234,18 +255,12 @@ class RCTVideoView : FrameLayout {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        playerView.player = null
-        tickers.stopProgress()
-        tickers.stopOnLoad()
-        lastIsBuffering = null
-        overlay?.unmount()
-        overlay = null
-    }
-
-    fun dealloc() {
         if(isBlurWindow) {
             cleanup()
         } else revertShareElement()
+    }
+
+    fun dealloc() {
         isBlurWindow = true
     }
 
@@ -272,9 +287,54 @@ class RCTVideoView : FrameLayout {
         overlay?.unmount()
         overlay = null
         cacheRect = null
+        posterBitmap = null
     }
 
     // ===== Props =====
+    fun setPoster(url: String?) {
+        if (url.isNullOrBlank()) {
+            posterView.setImageDrawable(null)
+            posterView.visibility = GONE
+            posterBitmap = null
+            return
+        }
+        Thread {
+            try {
+                val url = URL(url)
+                val bmp = BitmapFactory.decodeStream(url.openStream())
+                posterBitmap = bmp
+                post {
+                    posterView.setImageBitmap(posterBitmap)
+                    posterView.visibility = VISIBLE
+                }
+            } catch (_: Exception) {
+            }
+        }.start()
+
+        applyPosterResizeMode(posterResizeMode)
+
+        val p = player
+        val neverPlayed = (p?.currentPosition ?: 0L) <= 50L
+        val shouldShow = (externallyPaused && neverPlayed) || p == null
+        posterView.visibility = if (shouldShow) VISIBLE else GONE
+    }
+
+    fun setPosterResizeMode(mode: String?) {
+        val resizeMode = mode?.lowercase() ?: "cover"
+        if(resizeMode == posterResizeMode) return
+        posterResizeMode = resizeMode
+        if(posterBitmap != null) {
+            Thread {
+                try {
+                    posterView.setImageBitmap(posterBitmap)
+                    posterView.visibility = VISIBLE
+                } catch (_: Exception) {
+                }
+            }.start()
+        }
+        applyPosterResizeMode(posterResizeMode)
+    }
+
     fun setSource(url: String?) {
         if (url.isNullOrBlank()) return
         player?.let { if (url != currentSource) loadSource(url) } ?: run { pendingSource = url }
@@ -282,6 +342,9 @@ class RCTVideoView : FrameLayout {
 
     fun setPaused(paused: Boolean) {
         externallyPaused = paused
+        if(!externallyPaused) {
+            posterView.visibility = GONE
+        }
         updatePlayState()
     }
 
@@ -363,6 +426,16 @@ class RCTVideoView : FrameLayout {
         shareTagElement = newTag
         if (newTag != null) {
             RCTVideoTag.registerView(this, newTag)
+        }
+    }
+
+    // ===== Poster helpers =====
+    private fun applyPosterResizeMode(mode: String) {
+        posterView.scaleType = when (mode) {
+            "cover" -> ImageView.ScaleType.CENTER_CROP
+            "stretch", "fill" -> ImageView.ScaleType.FIT_XY
+            "center" -> ImageView.ScaleType.CENTER
+            else -> ImageView.ScaleType.FIT_CENTER
         }
     }
 
@@ -621,14 +694,27 @@ class RCTVideoView : FrameLayout {
                         applyAspectNow()
                         setPaused(externallyPaused)
                         alpha = 1f
+
+                       posterView.visibility = if(movingPlayer.currentPosition > 50L) GONE else VISIBLE
                     },
                     onCompleted = {
+                        otherView.updatePosterVisibility()
                         overlay?.unmount()
                         overlay = null
                     }
                 )
             }, 5)
         }
+    }
+
+    private fun updatePosterVisibility() {
+        val p = player
+        val neverPlayed = (p?.currentPosition ?: 0L) <= 50L
+        val shouldShow = (externallyPaused && neverPlayed) || p == null
+        if(shouldShow && posterBitmap != null) {
+            posterView.visibility = VISIBLE
+            alpha = 1f
+        } else posterView.visibility = GONE
     }
 
     fun revertShareElement() {
@@ -646,6 +732,7 @@ class RCTVideoView : FrameLayout {
                         }
         var fromRect = rectForShare(this, 0)
         alpha = 0f
+        other.alpha = 0f
 
         if (!ViewCompat.isAttachedToWindow(this) && cacheRect != null) {
             fromRect = cacheRect!!
