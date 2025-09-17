@@ -149,6 +149,8 @@ Example:
 | `volume`                 | number    | `1`       | Set the video volume (range: `0` to `1`).                                                     |
 | `resizeMode`             | string    | `'contain'` | Video resize mode: `'contain'`, `'cover'`, `'stretch'`, `'center'`.                           |
 | `shareTagElement`        | string    |           | Tag for shared element transitions between video views.                                       |
+| `fullscreen`             | boolean   | `false`    | Enable fullscreen mode for video.                                                            |
+| `fullscreenMode`         | 'system' \| 'transform' | `'system'` | Fullscreen implementation: `'system'` will rotate the device screen to landscape and use true fullscreen. `'transform'` only fakes fullscreen by scaling the view, without rotating the device screen. |
 | `progressInterval`       | number    | `250`     | Interval (ms) for progress updates via `onProgress`.                                          |
 | `sharingAnimatedDuration`| number    | `350`     | Duration (ms) for shared element transition animation.<br>**Note:** If React Navigation is present, this value will be overridden by the screen animation duration from React Navigation. |
 | `children`               | ReactNode |           | Any React Native view(s) to overlay on top of the video.                                      |

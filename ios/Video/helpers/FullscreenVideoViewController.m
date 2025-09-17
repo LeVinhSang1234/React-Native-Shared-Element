@@ -1,0 +1,44 @@
+//
+//  FullscreenVideoViewController.m
+//  ShareElement
+//
+//  Created by Sang Lv on 18/9/25.
+//
+
+#import "FullscreenVideoViewController.h"
+
+@interface FullscreenVideoViewController ()
+@property (nonatomic, strong) UIView *container;
+@end
+
+@implementation FullscreenVideoViewController
+
+- (void)viewDidLoad {
+  [super viewDidLoad];
+  self.view.backgroundColor = UIColor.blackColor;
+
+  self.container = [[UIView alloc] initWithFrame:self.view.bounds];
+  self.container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+  self.container.backgroundColor = UIColor.blackColor;
+  [self.view addSubview:self.container];
+}
+
+- (UIView *)videoContainer {
+  return self.container;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+  return self.landscape ? UIInterfaceOrientationMaskLandscape
+                        : UIInterfaceOrientationMaskPortrait;
+}
+
+- (BOOL)shouldAutorotate {
+  return YES;
+}
+
+- (void)viewDidLayoutSubviews {
+  [super viewDidLayoutSubviews];
+  self.container.frame = self.view.bounds;
+}
+
+@end

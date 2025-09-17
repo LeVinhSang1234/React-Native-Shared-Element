@@ -20,12 +20,16 @@ function AppContent() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
-        posterResizeMode="cover"
         paused
-      />
+        fullscreen={false}
+        posterResizeMode="cover"
+      >
+        <Text>asdasdadsa</Text>
+      </Video>
       {copy ? (
         <Video
           paused
+          fullscreen
           poster={{ uri: 'https://picsum.photos/300/200' }}
           style={styles.rootCopy}
           source={{

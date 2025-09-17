@@ -18,6 +18,7 @@
 #import "UIViewController+RNBackLife.h"
 #import "UINavigationController+RNPopHook.h"
 #import "RNEarlyRegistry.h"
+#import "FullscreenVideoViewController.h"
 
 #ifndef RN_WEAKIFY
 #define RN_WEAKIFY(var) __weak __typeof__(var) weak_##var = (var);
@@ -42,6 +43,10 @@ using namespace facebook::react;
 // Focus state
 @property (nonatomic, assign) BOOL isFocused;
 @property (nonatomic, assign) BOOL isBlur;
+@property (nonatomic, assign) BOOL fullscreen;
+@property (nonatomic, assign) BOOL waitFullscreen;
+@property (nonatomic, copy)   NSString *fullscreenMode; // system | transform
+@property (nonatomic, assign) UIViewController *fullscreenVC;
 
 // Other refs
 @property (nonatomic, strong) UIImageView *posterView;
@@ -78,6 +83,7 @@ using namespace facebook::react;
 
 - (instancetype)init {
   if (self = [super init]) {
+    _fullscreenMode = @"system";
     self.hidden = YES;
     _videoManager  = [[RCTVideoManager alloc] init];
     _videoOverlay  = [[RCTVideoOverlay alloc] init];
@@ -94,7 +100,7 @@ using namespace facebook::react;
     _nativeContainer.layer.zPosition = -1;
     [self.layer addSublayer:_nativeContainer.layer];
     [_nativeContainer addSubview:_posterView];
-
+    
     RN_WEAKIFY(self)
     _videoManager.onPosterUpdate = ^(UIImage * _Nullable image) {
       RN_STRONGIFY(self)
@@ -170,9 +176,12 @@ using namespace facebook::react;
   [_videoOverlay applySharingAnimatedDuration:p.sharingAnimatedDuration];
   _headerHeight = p.headerHeight;
   
+  NSString *fullscreenMode = p.fullscreenMode.empty() ? @"system" : [NSString stringWithUTF8String:p.fullscreenMode.c_str()];
+  
+  [self applyFullscreen:p.fullscreen fullscreenMode:fullscreenMode];
+  
   [super updateProps:props oldProps:oldProps];
 }
-
 
 - (void)applyPosterResizeMode:(NSString *)posterResizeMode {
   if ([posterResizeMode isEqualToString:_posterResizeMode]) return;
@@ -187,6 +196,178 @@ using namespace facebook::react;
   } else if ([_posterResizeMode isEqualToString:@"center"]) {
     _posterView.contentMode = UIViewContentModeCenter;
   } else _posterView.contentMode = UIViewContentModeScaleAspectFill;
+}
+
+- (void)applyFakeFullscreen:(BOOL)fullscreen {
+  if (_fullscreen) [self enterFakeFullscreen];
+  else [self exitFullscreenWithCompletion:nil];
+}
+
+- (void)applyFullscreen:(BOOL)fullscreen fullscreenMode:(NSString*)fullscreenMode {
+  if(!self.window && fullscreen && _fullscreen != fullscreen) {
+    _fullscreenMode = fullscreenMode;
+    _waitFullscreen = true;
+    return;
+  }
+  
+  if (fullscreen == _fullscreen && [_fullscreenMode isEqualToString:fullscreenMode]) return;
+  
+  __weak __typeof__(self) wSelf = self;
+  
+  void (^proceed)(void) = ^{
+    wSelf.fullscreenMode = fullscreenMode;
+    wSelf.fullscreen = fullscreen;
+    
+    if(![fullscreenMode isEqualToString:@"system"]) {
+      [wSelf applyFakeFullscreen:fullscreen];
+      return;
+    }
+    if (fullscreen) [wSelf enterFullscreen];
+    else [wSelf exitFullscreenWithCompletion:nil];
+  };
+  
+  if (_fullscreenVC && ![_fullscreenMode isEqualToString:fullscreenMode]) {
+    [self exitFullscreenWithCompletion:proceed];
+  } else {
+    proceed();
+  }
+}
+
+- (void)enterFakeFullscreen {
+  UIViewController *rootVC = [RCTVideoHelper getRootViewController];
+  if (!rootVC) return;
+  
+  UIViewController *vc = [UIViewController new];
+  vc.modalPresentationStyle = UIModalPresentationFullScreen;
+  vc.view.backgroundColor = UIColor.blackColor;
+  
+  UIView *container = [[UIView alloc] initWithFrame:vc.view.bounds];
+  container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+  container.backgroundColor = UIColor.blackColor;
+  [vc.view addSubview:container];
+  
+  [self createPlayerLayerIfNeeded];
+  if (_videoManager.playerLayer) {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    _videoManager.playerLayer.frame = container.bounds;
+    [container.layer addSublayer:_videoManager.playerLayer];
+    [CATransaction commit];
+  }
+  
+  if (_posterView) {
+    [_posterView removeFromSuperview];
+    _posterView.frame = container.bounds;
+    _posterView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [container addSubview:_posterView];
+  }
+  
+  _fullscreenVC = vc;
+  
+  __weak __typeof__(self) wSelf = self;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [rootVC presentViewController:vc animated:NO completion:^{
+      // Fake rotate ngang
+      CGFloat w = UIScreen.mainScreen.bounds.size.width;
+      CGFloat h = UIScreen.mainScreen.bounds.size.height;
+      
+      vc.view.transform = CGAffineTransformMakeRotation(M_PI_2);
+      vc.view.bounds = CGRectMake(0, 0, h, w);
+      
+      container.frame = vc.view.bounds;
+      if (wSelf.videoManager.playerLayer) {
+        wSelf.videoManager.playerLayer.frame = container.bounds;
+      }
+    }];
+  });
+}
+
+- (void)enterFullscreen {
+  UIViewController *rootVC = [RCTVideoHelper getRootViewController];
+  if (!rootVC) return;
+  
+  FullscreenVideoViewController *vc = [FullscreenVideoViewController new];
+  vc.modalPresentationStyle = UIModalPresentationFullScreen;
+  vc.view.backgroundColor = UIColor.blackColor;
+  
+  // Quyết định xoay ngang/dọc theo video size
+  CGSize videoSize = _videoManager.player.currentItem.presentationSize;
+  if (videoSize.width > 0 && videoSize.height > 0) {
+    vc.landscape = (videoSize.width > videoSize.height);
+  } else {
+    vc.landscape = YES; // fallback mặc định
+  }
+  
+  UIView *container = [[UIView alloc] initWithFrame:vc.view.bounds];
+  container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+  container.backgroundColor = UIColor.blackColor;
+  [vc.view addSubview:container];
+  
+  [self createPlayerLayerIfNeeded];
+  
+  if (_videoManager.playerLayer) {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    [_videoManager.playerLayer removeFromSuperlayer]; // clear trước
+    _videoManager.playerLayer.frame = container.bounds;
+    [container.layer addSublayer:_videoManager.playerLayer];
+    [CATransaction commit];
+  }
+  
+  _fullscreenVC = vc;
+  __weak __typeof__(self) wSelf = self;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [rootVC presentViewController:vc animated:NO completion:^{
+      if (wSelf.videoManager.playerLayer) {
+        [CATransaction begin];
+        [CATransaction setDisableActions:YES];
+        wSelf.videoManager.playerLayer.frame = container.bounds;
+        [CATransaction commit];
+      }
+      
+      if (wSelf.posterView) {
+        [wSelf.posterView removeFromSuperview];
+        wSelf.posterView.frame = container.bounds;
+        wSelf.posterView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [container addSubview:wSelf.posterView];
+        [container bringSubviewToFront:wSelf.posterView];
+      }
+
+    }];
+  });
+}
+
+- (void)exitFullscreenWithCompletion:(void (^)(void))completion {
+  if (!_fullscreenVC) {
+    if (completion) completion();
+    return;
+  }
+  if (_posterView) {
+    [_posterView removeFromSuperview];
+    _posterView.frame = self.bounds;
+    [_nativeContainer addSubview:_posterView];
+    [_nativeContainer bringSubviewToFront:_posterView];
+  }
+
+  __weak __typeof__(self) wSelf = self;
+  [_fullscreenVC dismissViewControllerAnimated:NO completion:^{
+    if (wSelf.videoManager.playerLayer) {
+      [CATransaction begin];
+      [CATransaction setDisableActions:YES];
+      [wSelf.videoManager.playerLayer removeFromSuperlayer];
+      wSelf.videoManager.playerLayer.frame = wSelf.bounds;
+      [wSelf.layer addSublayer:wSelf.videoManager.playerLayer];
+      [CATransaction commit];
+    }
+    wSelf.fullscreenVC = nil;
+    
+    if (completion) {
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)),
+                     dispatch_get_main_queue(), ^{
+        completion();
+      });
+    }
+  }];
 }
 
 #pragma mark - Layout
@@ -218,6 +399,17 @@ using namespace facebook::react;
     if (!vc) return;
     [self attachLifecycleToViewController:vc];
     [self rn_updateCachedNavTitle];
+    
+    if (self.window && _waitFullscreen) {
+      __weak __typeof__(self) wSelf = self;
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)),
+                     dispatch_get_main_queue(), ^{
+        if(!wSelf.sharing) {
+          wSelf.waitFullscreen = NO;
+          [wSelf applyFullscreen:YES fullscreenMode:wSelf.fullscreenMode];
+        };
+      });
+    }
   } else if (!_isFocused) {
     [[RNEarlyRegistry shared] removeView:self];
     __weak __typeof__(self) wSelf = self;
@@ -239,8 +431,8 @@ using namespace facebook::react;
     [_videoManager applyResizeMode:resizeMode];
   }
   if (_videoManager.playerLayer.superlayer != _nativeContainer.layer) {
-     [_nativeContainer.layer addSublayer:_videoManager.playerLayer];
-   }
+    [_nativeContainer.layer addSublayer:_videoManager.playerLayer];
+  }
   [_videoManager setLayerFrame:self.bounds];
 }
 
@@ -301,6 +493,13 @@ using namespace facebook::react;
   // reset UI nhẹ để reuse
   _posterView.image = nil;
   _posterView.hidden = YES;
+  _fullscreen = NO;
+  
+  _waitFullscreen = NO;
+  if (_fullscreenVC) {
+    [_fullscreenVC dismissViewControllerAnimated:NO completion:nil];
+    _fullscreenVC = nil;
+  }
 }
 
 - (void)didUnmount {
@@ -431,6 +630,10 @@ using namespace facebook::react;
       Float64 cur = CMTimeGetSeconds(toView.videoManager.player.currentTime);
       if (cur < 0.05 && toView.videoManager.paused) toView.posterView.hidden = NO;
       else toView.posterView.hidden = YES;
+      
+      if(self.waitFullscreen) {
+        [self applyFullscreen:YES fullscreenMode:self.fullscreenMode];
+      }
     }
     
     [[RCTVideoRouteRegistry shared] commitShareFromView:fromView
@@ -498,10 +701,10 @@ using namespace facebook::react;
 }
 
 - (void)_onWillPopNoti:(NSNotification *)note {
-//  UIViewController *fromVC = note.userInfo[@"from"];
-//  if (fromVC == [self nearestViewController]) {
-//    RCTLog(self, @"Video View");
-//  }
+  //  UIViewController *fromVC = note.userInfo[@"from"];
+  //  if (fromVC == [self nearestViewController]) {
+  //    RCTLog(self, @"Video View");
+  //  }
 }
 
 - (void)handleWillPop {

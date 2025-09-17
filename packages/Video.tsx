@@ -43,17 +43,26 @@ export interface VideoProps
     | 'posterResizeMode'
     | 'hiddenWhenShareElement'
     | 'cacheMaxSize'
+    | 'fullscreenMode'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   posterResizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   source?: string | { uri: string } | number;
   poster?: string | { uri: string } | number;
+  fullscreenMode?: 'system' | 'transform';
 }
 
 const config = { cacheMaxSize: 300 };
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
-  const { source, poster, progressInterval = 250, volume = 1, ...p } = props;
+  const {
+    source,
+    poster,
+    progressInterval = 250,
+    volume = 1,
+    fullscreenMode = 'system',
+    ...p
+  } = props;
 
   let headerHeight: number = 0;
   try {
@@ -99,6 +108,7 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       hiddenWhenShareElement
       headerHeight={headerHeight}
       cacheMaxSize={config.cacheMaxSize}
+      fullscreenMode={fullscreenMode}
     />
   );
 });

@@ -132,4 +132,29 @@ static NSTimeInterval const kPosterMaxAge   = 6 * 60 * 60; // 6h
   return win;
 }
 
++ (nullable UIViewController *)getRootViewController {
+  UIWindow *win = nil;
+  if (@available(iOS 13.0, *)) {
+    for (UIWindowScene *scene in UIApplication.sharedApplication.connectedScenes) {
+      if (scene.activationState == UISceneActivationStateForegroundActive) {
+        for (UIWindow *w in scene.windows) {
+          if (w.isKeyWindow) {
+            win = w;
+            break;
+          }
+        }
+        if (!win && scene.windows.firstObject) {
+          win = scene.windows.firstObject;
+        }
+      }
+    }
+  } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    win = UIApplication.sharedApplication.keyWindow ?: UIApplication.sharedApplication.windows.firstObject;
+#pragma clang diagnostic pop
+  }
+  return win.rootViewController;
+}
+
 @end
