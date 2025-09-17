@@ -13,6 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface RCTVideoView : RCTViewComponentView
 
 @property (nonatomic, assign) BOOL sharing;
+@property (nonatomic, assign) BOOL shared;
+
 @property (nonatomic, assign) double headerHeight;
 
 @property (nonatomic, copy) NSString *shareTagElement;

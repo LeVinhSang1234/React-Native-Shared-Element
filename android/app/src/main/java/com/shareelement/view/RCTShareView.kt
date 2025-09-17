@@ -13,7 +13,6 @@ import com.shareelement.view.helpers.RCTShareViewOverlay
 import com.facebook.react.bridge.ReactContext
 
 class RCTShareView(context: Context) : ReactViewGroup(context) {
-
     var shareTagElement: String? = null
         set(value) {
             if (field == value) return
@@ -51,9 +50,9 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        isBlurWindow = true
-        overlay?.didUnmount()
-        overlay = null
+        if(!isBlurWindow) {
+            performBackSharedElementIfPossible()
+        } else cleanup()
     }
 
     fun initialize() {}
@@ -61,6 +60,10 @@ class RCTShareView(context: Context) : ReactViewGroup(context) {
     @RequiresApi(Build.VERSION_CODES.P)
     fun prepareForRecycle() {
         performBackSharedElementIfPossible()
+    }
+
+    fun deadloc() {
+        isBlurWindow = true
     }
 
     private fun cleanup() {

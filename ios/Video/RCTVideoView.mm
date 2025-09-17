@@ -62,6 +62,8 @@ using namespace facebook::react;
 @property (nonatomic, copy) RNLifecycleBlock willDisappearBlock;
 @property (nonatomic, copy) RNLifecycleBlock didDisappearBlock;
 
+@property (nonatomic, strong) UIView *nativeContainer;
+
 @end
 
 @implementation RCTVideoView
@@ -86,8 +88,13 @@ using namespace facebook::react;
     _posterView.contentMode = UIViewContentModeScaleAspectFill;
     _posterView.clipsToBounds = YES;
     _posterView.hidden = YES;
-    [self addSubview:_posterView];
     
+    _nativeContainer = [[UIView alloc] initWithFrame:CGRectZero];
+    _nativeContainer.userInteractionEnabled = NO;
+    _nativeContainer.layer.zPosition = -1;
+    [self.layer addSublayer:_nativeContainer.layer];
+    [_nativeContainer addSubview:_posterView];
+
     RN_WEAKIFY(self)
     _videoManager.onPosterUpdate = ^(UIImage * _Nullable image) {
       RN_STRONGIFY(self)
@@ -105,9 +112,8 @@ using namespace facebook::react;
     
     _videoManager.onHiddenPoster = ^{
       RN_STRONGIFY(self)
-      if (!self) return;
+      if (!self || self.shared) return;
       
-      // Nếu paused + chưa từng play → giữ poster, ngược lại ẩn
       self.posterView.hidden = YES;
     };
   }
@@ -188,7 +194,8 @@ using namespace facebook::react;
   self.posterView.frame = self.bounds;
   [self createPlayerLayerIfNeeded];
   if (_videoManager.playerLayer) _videoManager.playerLayer.frame = self.bounds;
-  [self bringSubviewToFront:self.posterView];
+  
+  [_nativeContainer bringSubviewToFront:_posterView];
   
   if(!self.window) return;
   // Tính toán offset so với window để dùng khi animate
@@ -229,9 +236,9 @@ using namespace facebook::react;
     NSString *resizeMode = [NSString stringWithUTF8String:props.resizeMode.c_str()];
     [_videoManager applyResizeMode:resizeMode];
   }
-  if (_videoManager.playerLayer.superlayer != self.layer) {
-    [self.layer addSublayer:_videoManager.playerLayer];
-  }
+  if (_videoManager.playerLayer.superlayer != _nativeContainer.layer) {
+     [_nativeContainer.layer addSublayer:_videoManager.playerLayer];
+   }
   [_videoManager setLayerFrame:self.bounds];
 }
 
@@ -373,6 +380,8 @@ using namespace facebook::react;
   if (CGRectIsEmpty(fromFrame) || CGRectIsEmpty(toFrame)) return;
   
   fromView.sharing = YES;
+  fromView.shared = YES;
+  toView.shared = NO;
   toView.sharing = YES;
   
   fromView.hidden  = YES;
@@ -419,6 +428,7 @@ using namespace facebook::react;
     } else {
       Float64 cur = CMTimeGetSeconds(toView.videoManager.player.currentTime);
       if (cur < 0.05 && toView.videoManager.paused) toView.posterView.hidden = NO;
+      else toView.posterView.hidden = YES;
     }
     
     [[RCTVideoRouteRegistry shared] commitShareFromView:fromView

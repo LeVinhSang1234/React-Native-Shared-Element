@@ -105,6 +105,8 @@ class RCTVideoView : FrameLayout {
 
     private var cacheRect: Rect? = null
 
+    val reactLayer = FrameLayout(context)
+
     private val trc: ThemedReactContext?
         get() = context as? ThemedReactContext
 
@@ -164,7 +166,7 @@ class RCTVideoView : FrameLayout {
             isFocusable = false
         }
         addView(posterView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        bringChildToFront(posterView)
+        addView(reactLayer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         alpha = 0f
         player =
                 buildPlayer().also { p ->
@@ -238,6 +240,7 @@ class RCTVideoView : FrameLayout {
         super.onAttachedToWindow()
         if (isBlurWindow) {
             isBlurWindow = false
+            alpha = 1f
             return
         }
         playerView.player = player
@@ -339,6 +342,9 @@ class RCTVideoView : FrameLayout {
 
     fun setPaused(paused: Boolean) {
         externallyPaused = paused
+        if(!externallyPaused) {
+            posterView.visibility = GONE
+        }
         updatePlayState()
     }
 
@@ -688,6 +694,8 @@ class RCTVideoView : FrameLayout {
                         applyAspectNow()
                         setPaused(externallyPaused)
                         alpha = 1f
+
+                       posterView.visibility = if(movingPlayer.currentPosition > 50L) GONE else VISIBLE
                     },
                     onCompleted = {
                         otherView.updatePosterVisibility()

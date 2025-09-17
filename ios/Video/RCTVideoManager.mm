@@ -64,9 +64,7 @@ static NSString * const kResizeModeCenter  = @"center";
     [_player play];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.02 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{ [weakSelf.player setMuted:weakSelf.muted]; });
-    if (self.onHiddenPoster) {
-      self.onHiddenPoster();
-    }
+    if (_onHiddenPoster)_onHiddenPoster();
   }
 }
 

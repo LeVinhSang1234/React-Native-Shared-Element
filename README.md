@@ -94,7 +94,7 @@ This ensures the navigation patch is always applied after installing dependencie
 
 ## Usage
 
-### Shared Video
+# Shared Video
 
 ```tsx
 import {Video} from '@rn-slv/react-native-shared-element';
@@ -108,9 +108,25 @@ import {Video} from '@rn-slv/react-native-shared-element';
 ```
 ---
 
-## Props
+The `Video` component also supports passing children, allowing you to overlay any React Native views (such as buttons, text, or icons) on top of the video.
 
-### Video
+Example:
+
+```tsx
+<Video
+  source={{ uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }}
+  shareTagElement="myVideo"
+  sharingAnimatedDuration={500}
+>
+  <View>
+    <Text style={{ color: 'white' }}>Overlay Text</Text>
+    <TouchableOpacity onPress={...}>
+      <Icon name="play" />
+    </TouchableOpacity>
+  </View>
+</Video>
+```
+## Props
 
 | Prop                     | Type      | Default   | Description                                                                                   |
 |--------------------------|-----------|-----------|-----------------------------------------------------------------------------------------------|
@@ -124,6 +140,7 @@ import {Video} from '@rn-slv/react-native-shared-element';
 | `shareTagElement`        | string    |           | Tag for shared element transitions between video views.                                       |
 | `progressInterval`       | number    | `250`     | Interval (ms) for progress updates via `onProgress`.                                          |
 | `sharingAnimatedDuration`| number    | `350`     | Duration (ms) for shared element transition animation.<br>**Note:** If React Navigation is present, this value will be overridden by the screen animation duration from React Navigation. |
+| `children`               | ReactNode |           | Any React Native view(s) to overlay on top of the video.                                      |
 
 ## Event Props (Video only)
 
@@ -160,7 +177,7 @@ videoRef.current?.measure((data) => {
 });
 ```
 
-### Shared View (any content)
+# Shared View
 
 ```tsx
 import {ShareView} from '@rn-slv/react-native-shared-element';

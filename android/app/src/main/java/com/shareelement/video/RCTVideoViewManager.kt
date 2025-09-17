@@ -1,11 +1,12 @@
 package com.shareelement.video
 
+import android.view.View
 import com.facebook.react.bridge.ReadableArray
-import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.annotations.ReactProp
 
-class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
+class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
     override fun getName() = "RCTVideo"
 
     override fun createViewInstance(reactContext: ThemedReactContext): RCTVideoView {
@@ -15,6 +16,22 @@ class RCTVideoViewManager : SimpleViewManager<RCTVideoView>() {
     override fun onDropViewInstance(view: RCTVideoView) {
         super.onDropViewInstance(view)
         view.dealloc()
+    }
+
+    override fun addView(parent: RCTVideoView, child: View, index: Int) {
+        parent.reactLayer.addView(child, index)
+    }
+
+    override fun removeViewAt(parent: RCTVideoView, index: Int) {
+        parent.reactLayer.removeViewAt(index)
+    }
+
+    override fun getChildCount(parent: RCTVideoView): Int {
+        return parent.reactLayer.childCount
+    }
+
+    override fun getChildAt(parent: RCTVideoView, index: Int): View {
+        return parent.reactLayer.getChildAt(index)
     }
 
     @ReactProp(name = "source")
