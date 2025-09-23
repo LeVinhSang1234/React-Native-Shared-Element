@@ -1,0 +1,69 @@
+'use strict';
+
+import * as React from 'react';
+import { NavigationContainerRefContext } from './NavigationContainerRefContext.js';
+import { NavigationContext } from './NavigationContext.js';
+import { TurboModuleRegistry, NativeModules } from 'react-native';
+
+const TAG =
+  typeof Symbol !== 'undefined'
+    ? Symbol.for('rn.earlyBackPatched')
+    : '__earlyBackPatched';
+const POP = new Set(['GO_BACK', 'POP', 'POP_TO_TOP']);
+
+function getEarly() {
+  const tm = TurboModuleRegistry?.getEnforcing?.('RCTNativeEarly');
+  if (tm) return tm;
+  const legacy = NativeModules?.Early || NativeModules?.RNEarlyBack;
+  return legacy || null;
+}
+
+function prepare() {
+  try {
+    const RNEarlyBack = getEarly();
+    RNEarlyBack.prepareForGoBackSync();
+  } catch {}
+}
+
+/**
+ * Hook to access the navigation prop of the parent screen anywhere.
+ *
+ * @returns Navigation prop of the parent screen.
+ */
+export function useNavigation() {
+  const root = React.useContext(NavigationContainerRefContext);
+  const navigation = React.useContext(NavigationContext);
+  if (navigation === undefined && root === undefined) {
+    throw new Error(
+      "Couldn't find a navigation object. Is your component inside NavigationContainer?",
+    );
+  }
+
+  const nav = navigation ?? root;
+
+  if (nav && !nav[TAG]) {
+    const gb = typeof nav.goBack === 'function' ? nav.goBack.bind(nav) : null;
+    if (gb)
+      nav.goBack = () => {
+        prepare();
+        setTimeout(gb, 50);
+      };
+
+    const disp =
+      typeof nav.dispatch === 'function' ? nav.dispatch.bind(nav) : null;
+    if (disp)
+      nav.dispatch = a => {
+        if (a && POP.has(a.type)) prepare();
+        return disp(a);
+      };
+
+    try {
+      Object.defineProperty(nav, TAG, { value: true, enumerable: false });
+    } catch {
+      nav[TAG] = true;
+    }
+  }
+
+  return nav;
+}
+//# sourceMappingURL=useNavigation.js.map

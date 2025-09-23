@@ -14,6 +14,8 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
+pod 'KTVHTTPCache'
+
 target 'shareelement' do
   config = use_native_modules!
 
@@ -22,7 +24,7 @@ target 'shareelement' do
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
-
+  
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
@@ -31,5 +33,9 @@ target 'shareelement' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    files = `find Pods -name KTVHCRange.h`.split("\n")
+    files.each do |file|
+      system("sed -i '' -e 's/LONG_LONG_MAX/LLONG_MAX/g' \"#{file}\"")
+    end
   end
 end

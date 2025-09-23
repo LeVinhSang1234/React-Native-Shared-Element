@@ -1,44 +1,68 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import Video, { setCacheMaxSize } from './packages/Video';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+setCacheMaxSize(300);
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
+  return <AppContent />;
 }
 
 function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
+  const [copy, setCopy] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
+    <ScrollView style={{ marginTop: 100, paddingTop: 100 }}>
+      <Video
+        style={styles.root}
+        poster={{ uri: 'https://picsum.photos/300/200' }}
+        source={{
+          uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        }}
+        shareTagElement="Video"
+      >
+        <Text>asdasdadsa</Text>
+      </Video>
+      {copy ? (
+        <Video
+          style={[styles.root, { height: 300 }]}
+          source={{
+            uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          }}
+          shareTagElement="Video"
+        >
+          <Text>asdasdadsa</Text>
+        </Video>
+      ) : null}
+      <TouchableOpacity style={styles.copy} onPress={() => setCopy(!copy)}>
+        <Text>Copy</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  root: {
+    width: '100%',
+    height: 200,
+    backgroundColor: 'red',
+  },
+  rootCopy: {
+    width: '55%',
+    height: 200,
+    marginLeft: '10%',
+    backgroundColor: 'black',
+  },
+  copy: {
+    height: 33,
+    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'blue',
+  },
+  shareView: {
+    marginTop: 20,
+    backgroundColor: 'red',
   },
 });
 
