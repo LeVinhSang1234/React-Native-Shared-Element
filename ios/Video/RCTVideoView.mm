@@ -29,7 +29,11 @@ using namespace facebook::react;
 @property (nonatomic, assign) BOOL hasGestureTarget;
 @property (nonatomic, copy) NSString *shareTagElement;
 
+@property (nonatomic, assign) BOOL isShared;
+@property (nonatomic, assign) BOOL isSharing;
+@property (nonatomic, strong) RCTVideoOverlay *videoOverlay;
 @property (nonatomic, strong, nullable) RCTVideoView *otherView;
+@property (nonatomic, strong, nullable) RCTVideoView *shareToView;
 
 @property (nonatomic, weak) UINavigationController *nav;
 @property (nonatomic, copy) RNBackBlock willPopBlock;
@@ -117,6 +121,7 @@ using namespace facebook::react;
 
 - (void)willUnmount {
   [self unregisterRouteIfNeeded];
+  _shareTagElement = nil;
 }
 
 - (void)unmount {
@@ -125,6 +130,7 @@ using namespace facebook::react;
   [_videoOverlay unmount];
   _nav = nil;
   _otherView = nil;
+  _shareToView = nil;
   _isShared = NO;
   _isFocused = NO;
 }
@@ -299,14 +305,16 @@ using namespace facebook::react;
 #pragma mark - Navigation events
 
 - (void)rn_onEarlyPopFromNav {
-  [self willUnmount];
+  if(_isSharing) return;
+  [self backShareElement];
 }
 
 - (void)_onWillPopNoti:(NSNotification *)note {
 }
 
 - (void)handleWillPop {
-  
+  if(_isSharing || _backGestureActive) return;
+  [self backShareElement];
 }
 
 - (void)handleDidPop {
@@ -339,6 +347,26 @@ using namespace facebook::react;
   self.nav = nil;
 }
 
+#pragma mark - Back swipe
+- (void)_returnPlayerToOtherIfNeeded {
+  if (_otherView) {
+    [_otherView.videoManager adoptPlayerFromManager:_videoManager];
+    [_videoManager detachPlayer];
+    
+    _otherView.hidden = NO;
+    [_otherView createPlayerLayerIfNeeded];
+    [_otherView setNeedsLayout];
+    [_otherView layoutIfNeeded];
+    
+    Float64 cur = CMTimeGetSeconds(_otherView.videoManager.player.currentTime);
+    if (cur > 0.05) {
+      _otherView.videoPoster.hidden = YES;
+    }
+    [self willUnmount];
+    [self unmount];
+  }
+}
+
 - (void)_handlePopGesture:(UIGestureRecognizer *)gr {
   if (!_isFocused) return;
   
@@ -365,7 +393,7 @@ using namespace facebook::react;
           //          RCTVideoLog(self, @"%@", mess);
           if (popped) {
             // Gesture back thành công → trả player về other
-            // [self _returnPlayerToOtherIfNeeded];
+            [self _returnPlayerToOtherIfNeeded];
           }
         }];
         
@@ -377,7 +405,7 @@ using namespace facebook::react;
             
             if (popped) {
               // Gesture back thành công → trả player về other
-              // [self _returnPlayerToOtherIfNeeded];
+              [self _returnPlayerToOtherIfNeeded];
             }
           }
         }];
@@ -409,11 +437,14 @@ using namespace facebook::react;
 }
 
 - (void)backShareElement {
-  if(!_otherView || _isShared) {
+  if(_isShared && _shareToView && _shareToView.window) {
+    _otherView.shareToView = _shareToView;
+    _shareToView.otherView = _otherView;
+  }
+  
+  if (!_otherView || _isShared) {
     [self unmount];
-    return;
-  };
-  [self sharedTransitionFrom:self to:_otherView isBack:YES];
+  } else [self sharedTransitionFrom:self to:_otherView isBack:YES];
 }
 
 - (void)sharedTransitionFrom:(RCTVideoView *)fromView
@@ -421,17 +452,35 @@ using namespace facebook::react;
                       isBack:(Boolean) isBack {
   if (!fromView || !toView || fromView == toView) return;
   
+  UIViewController *vc = [toView nearestViewController];
+  CGFloat headerHeightTo = CGRectGetMaxY(vc.navigationController.navigationBar.frame);
+  
+  UIViewController *vcFrom = [fromView nearestViewController];
+  CGFloat headerHeightFrom = CGRectGetMaxY(vcFrom.navigationController.navigationBar.frame);
+  
+  if(headerHeightFrom < 0) headerHeightFrom = 0;
+  if(headerHeightTo < 0) headerHeightTo = 0;
+  
   fromView.isShared = YES;
   toView.isShared = NO;
   
+  fromView.shareToView = toView;
+  
+  fromView.isSharing = YES;
+  toView.isSharing = YES;
+  
   CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
   CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
+  
+  toFrame.origin.y += headerHeightTo;
+  fromFrame.origin.y += headerHeightFrom;
   
   [toView.videoOverlay moveToOverlay:fromFrame
                           tagetFrame:toFrame
                               player:fromView.videoManager.player
                  aVLayerVideoGravity:fromView.videoManager.aVLayerVideoGravity
-                             bgColor:fromView.backgroundColor
+                         fromBgColor:fromView.backgroundColor
+                           toBgColor:toView.backgroundColor
                             willMove:^ {
     fromView.hidden = YES;
     toView.hidden = YES;
@@ -442,6 +491,9 @@ using namespace facebook::react;
     toView.hidden = NO;
   } onCompleted:^{
     [toView createPlayerLayerIfNeeded];
+    
+    fromView.isSharing = NO;
+    toView.isSharing = NO;
     
     Float64 cur = CMTimeGetSeconds(toView.videoManager.player.currentTime);
     if (cur < 0.05 && toView.videoManager.paused) toView.videoPoster.hidden = NO;

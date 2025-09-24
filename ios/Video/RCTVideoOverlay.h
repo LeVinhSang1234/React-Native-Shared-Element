@@ -17,14 +17,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)applySharingAnimatedDuration:(double)sharingAnimatedDuration;
 
-- (void)moveToOverlay:(CGRect) moveFrame
-           tagetFrame:(CGRect) targetFrame
+- (void)moveToOverlay:(CGRect)fromFrame
+           tagetFrame:(CGRect)toFrame
                player:(AVPlayer *)player
-  aVLayerVideoGravity:(AVLayerVideoGravity)aVLayerVideoGravity
-              bgColor: (UIColor *) bgColor
+  aVLayerVideoGravity:(AVLayerVideoGravity)gravity
+          fromBgColor:(UIColor *)fromBgColor
+            toBgColor:(UIColor *)toBgColor
              willMove:(void (^)(void))willMove
-             onTarget:(nonnull void (^)(void))onTarget
-          onCompleted:(nonnull void (^)(void))onCompleted;
+             onTarget:(void (^)(void))onTarget
+          onCompleted:(void (^)(void))onCompleted;
 
 - (void)unmount;
 

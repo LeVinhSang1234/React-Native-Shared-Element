@@ -29,7 +29,6 @@ export interface VideoProps
     | 'source'
     | 'enableProgress'
     | 'enableOnLoad'
-    | 'headerHeight'
     | 'poster'
     | 'posterResizeMode'
     | 'hiddenWhenShareElement'

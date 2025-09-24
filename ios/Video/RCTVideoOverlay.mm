@@ -74,7 +74,8 @@ static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
            tagetFrame:(CGRect)toFrame
                player:(AVPlayer *)player
   aVLayerVideoGravity:(AVLayerVideoGravity)gravity
-              bgColor:(UIColor *)bgColor
+          fromBgColor:(UIColor *)fromBgColor
+            toBgColor:(UIColor *)toBgColor
              willMove:(void (^)(void))willMove
              onTarget:(void (^)(void))onTarget
           onCompleted:(void (^)(void))onCompleted
@@ -89,8 +90,8 @@ static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
   _playerLayer.videoGravity = gravity ?: _videoGravity;
   _playerLayer.frame = self.bounds;
   [self.layer addSublayer:_playerLayer];
-  self.backgroundColor = bgColor ?: UIColor.clearColor;
-
+  self.backgroundColor = fromBgColor ?: UIColor.clearColor;
+  
   [win addSubview:self];
   [win bringSubviewToFront:self];
   
@@ -103,6 +104,7 @@ static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
                       options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionBeginFromCurrentState
                    animations:^{
     weakSelf.frame = toFrame;
+    self.backgroundColor = toBgColor ?: UIColor.clearColor;
   } completion:^(BOOL finished) {
     __strong __typeof__(weakSelf) self = weakSelf;
     if (!self || !finished) return;
@@ -130,6 +132,7 @@ static NSString * const kDefaultVideoGravity  = AVLayerVideoGravityResizeAspect;
   }
   [self removeFromSuperview];
   [self stopTicking];
+  self.backgroundColor = UIColor.clearColor;
 }
 
 @end

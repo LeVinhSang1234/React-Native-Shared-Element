@@ -40,8 +40,10 @@ static NSMutableDictionary<NSString *, NSMutableArray<RCTVideoView *> *> *gRegis
 + (nullable RCTVideoView *)resolveViewForTag:(NSString *)tag exclude:(RCTVideoView *)excludeView {
   if (!tag.length) return nil;
   NSArray *arr = gRegistry[tag];
-  for (RCTVideoView *v in arr) {
-    if (v != excludeView) return v;
+  for (RCTVideoView *v in [arr reverseObjectEnumerator]) {
+    if (v != excludeView) {
+      return v;
+    }
   }
   return nil;
 }
