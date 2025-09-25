@@ -455,10 +455,6 @@ using namespace facebook::react;
   UIViewController *vc = [toView nearestViewController];
   CGFloat headerHeightTo = CGRectGetMaxY(vc.navigationController.navigationBar.frame);
   
-  UIViewController *vcFrom = [fromView nearestViewController];
-  CGFloat headerHeightFrom = CGRectGetMaxY(vcFrom.navigationController.navigationBar.frame);
-  
-  if(headerHeightFrom < 0) headerHeightFrom = 0;
   if(headerHeightTo < 0) headerHeightTo = 0;
   
   fromView.isShared = YES;
@@ -473,7 +469,6 @@ using namespace facebook::react;
   CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
   
   toFrame.origin.y += headerHeightTo;
-  fromFrame.origin.y += headerHeightFrom;
   
   [toView.videoOverlay moveToOverlay:fromFrame
                           tagetFrame:toFrame
