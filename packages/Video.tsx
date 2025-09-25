@@ -33,13 +33,13 @@ export interface VideoProps
     | 'posterResizeMode'
     | 'hiddenWhenShareElement'
     | 'cacheMaxSize'
-    | 'fullscreenMode'
+    | 'fullscreenOrientation'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   posterResizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   source?: string | { uri: string } | number;
   poster?: string | { uri: string } | number;
-  fullscreenMode?: 'system' | 'transform';
+  fullscreenOrientation?: 'landscape' | 'portrait';
 }
 
 const config = { cacheMaxSize: 300 };

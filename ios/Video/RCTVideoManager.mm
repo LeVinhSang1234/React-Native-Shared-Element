@@ -462,6 +462,7 @@ static NSString * const kResizeModeCenter  = @"center";
   if (object != _player.currentItem) return;
   
   if ([keyPath isEqualToString:@"status"] && _player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
+    if(_onPlayerReady) _onPlayerReady();
     [self sendLoadStartEvent];
     [_player.currentItem removeObserver:self forKeyPath:@"status"];
   } else if ([keyPath isEqualToString:@"error"]) {

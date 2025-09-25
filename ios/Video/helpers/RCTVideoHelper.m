@@ -318,4 +318,21 @@ static NSTimeInterval const kPosterMaxAge   = 6 * 60 * 60; // 6h
   return win.rootViewController;
 }
 
++ (UIInterfaceOrientation)currentInterfaceOrientation {
+  if (@available(iOS 13.0, *)) {
+    for (UIWindowScene *scene in UIApplication.sharedApplication.connectedScenes) {
+      if (scene.activationState == UISceneActivationStateForegroundActive &&
+          [scene isKindOfClass:UIWindowScene.class]) {
+        return scene.interfaceOrientation;
+      }
+    }
+    return UIInterfaceOrientationPortrait;
+  } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return UIApplication.sharedApplication.statusBarOrientation;
+#pragma clang diagnostic pop
+  }
+}
+
 @end

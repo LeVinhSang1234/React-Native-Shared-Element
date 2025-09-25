@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) AVPlayerLayer *playerLayer;
 @property (nonatomic, copy) AVLayerVideoGravity aVLayerVideoGravity;
 @property (nonatomic, assign) BOOL paused;
+@property (nonatomic, copy, nullable) void (^onPlayerReady)(void);
 
 - (void)applySource:(NSString *)source;
 - (void)applyResizeMode:(NSString *)resizeMode;
@@ -33,6 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)ensurePlayerLayerWithBounds:(CGRect)bounds;
 - (void)updateEventEmitter:(const facebook::react::VideoEventEmitter *)eventEmitter;
 - (void)seekToTime:(double)seek;
+
 
 // Share element: chuyển NGUYÊN player từ manager khác sang đây
 - (void)adoptPlayerFromManager:(RCTVideoManager *)other;

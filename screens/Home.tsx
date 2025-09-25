@@ -14,8 +14,13 @@ export default function Home() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
+        fullscreen
+        // fullscreenOrientation="portrait"
       >
-        <Text>asdasdadsa</Text>
+        <Text style={{ color: 'white' }}>
+          asdasdadádasd ádasd ádsad ádasd ádasd áda đa ấ ádassa asdasdadádasd
+          ádasd ádsad ádasd ádasd áda đa ấ ádassa
+        </Text>
       </Video>
       <Pressable onPress={() => navigation.navigate('Detail' as never)}>
         <Text>Detail</Text>

@@ -55,6 +55,7 @@
 		751E29872E825856000543A1 /* Exceptions for "Video" folder in "shareelement" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				helpers/FullscreenVideoViewController.m,
 				helpers/RCTVideoCache.m,
 				helpers/RCTVideoHelper.m,
 				helpers/RCTVideoRouteRegistry.mm,
