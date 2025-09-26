@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -32,7 +32,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		751E29692E825403000543A1 /* Exceptions for "navigation" folder in "shareelement" target */ = {
+		751E29692E825403000543A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				RCTNativeEarly.mm,
@@ -42,7 +42,7 @@
 			);
 			target = 13B07F861A680F5B00A75B9A /* shareelement */;
 		};
-		751E29772E82571B000543A1 /* Exceptions for "common" folder in "shareelement" target */ = {
+		751E29772E82571B000543A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"CADisplayLink+UserInfo.m",
@@ -52,10 +52,11 @@
 			);
 			target = 13B07F861A680F5B00A75B9A /* shareelement */;
 		};
-		751E29872E825856000543A1 /* Exceptions for "Video" folder in "shareelement" target */ = {
+		751E29872E825856000543A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				helpers/FullscreenVideoViewController.m,
+				helpers/RCTContainerPoster.m,
 				helpers/RCTVideoCache.m,
 				helpers/RCTVideoHelper.m,
 				helpers/RCTVideoRouteRegistry.mm,
@@ -69,42 +70,9 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		751E29632E825387000543A1 /* navigation */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				751E29692E825403000543A1 /* Exceptions for "navigation" folder in "shareelement" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = navigation;
-			sourceTree = "<group>";
-		};
-		751E29732E8256F4000543A1 /* common */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				751E29772E82571B000543A1 /* Exceptions for "common" folder in "shareelement" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = common;
-			sourceTree = "<group>";
-		};
-		751E29822E82582E000543A1 /* Video */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				751E29872E825856000543A1 /* Exceptions for "Video" folder in "shareelement" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Video;
-			sourceTree = "<group>";
-		};
+		751E29632E825387000543A1 /* navigation */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (751E29692E825403000543A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = navigation; sourceTree = "<group>"; };
+		751E29732E8256F4000543A1 /* common */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (751E29772E82571B000543A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = common; sourceTree = "<group>"; };
+		751E29822E82582E000543A1 /* Video */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (751E29872E825856000543A1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Video; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */

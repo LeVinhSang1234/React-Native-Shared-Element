@@ -37,9 +37,4 @@
   return YES;
 }
 
-- (void)viewDidLayoutSubviews {
-  [super viewDidLayoutSubviews];
-  self.container.frame = self.view.bounds;
-}
-
 @end

@@ -21,6 +21,7 @@
 #import "UINavigationController+RNPopHook.h"
 #import "RNEarlyRegistry.h"
 #import "FullscreenVideoViewController.h"
+#import "RCTContainerPoster.h"
 
 using namespace facebook::react;
 
@@ -94,13 +95,13 @@ using namespace facebook::react;
     _container = [[UIView alloc] initWithFrame:CGRectZero];
     _container.userInteractionEnabled = YES;
     
-    _containerPoster = [[UIView alloc] initWithFrame:CGRectZero];
-    _containerPoster.userInteractionEnabled = YES;
-    
+    // TODO CREATE CLASS
     _containerPlayer = [[UIView alloc] initWithFrame:CGRectZero];
     _containerPlayer.userInteractionEnabled = NO;
     _containerPlayer.layer.zPosition = -1;
     
+    _containerPoster = [[RCTContainerPoster alloc] init];
+    _containerPoster.userInteractionEnabled = YES;
     [_containerPoster.layer addSublayer:_containerPlayer.layer];
     [_containerPoster addSubview:_videoPoster];
     
@@ -108,6 +109,8 @@ using namespace facebook::react;
     _videoManager.onPlayerReady = ^() {
       [wSelf applyFullscreen:wSelf.fullscreen fullscreenOrientation:wSelf.fullscreenOrientation];
     };
+    _container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    _containerPoster.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     
     [self addSubview:_containerPoster];
     [self addSubview:_container];
@@ -146,7 +149,6 @@ using namespace facebook::react;
   _isShared = NO;
   _isFocused = NO;
   [self exitFullscreen];
-  
 }
 
 #pragma mark - Mount / Unmount Children
@@ -193,12 +195,7 @@ using namespace facebook::react;
 - (void)layoutSubviews {
   [super layoutSubviews];
   if(_fullscreenVC) return;
-  
   [self createPlayerLayerIfNeeded];
-  _container.frame = self.bounds;
-  _containerPoster.frame = self.bounds;
-  _containerPlayer.frame = self.bounds;
-  _videoPoster.frame = self.bounds;
 }
 
 #pragma mark - React props / events
@@ -540,80 +537,33 @@ using namespace facebook::react;
 }
 
 - (void)enterFullscreen {
-  if(_isSharing) return;
-  if(_fullscreenVC) {
-    BOOL newLandscape;
-    if (_fullscreenOrientation) {
-      newLandscape = [_fullscreenOrientation isEqualToString:@"landscape"];
-    } else {
-      CGSize videoSize = _videoManager.player.currentItem.presentationSize;
-      if (videoSize.width > 0 && videoSize.height > 0) {
-        newLandscape = (videoSize.width > videoSize.height);
-      } else {
-        newLandscape = YES;
-      }
-    }
-    if (_fullscreenVC.landscape != newLandscape) {
-      _fullscreenVC.landscape = newLandscape;
-      
-      UIInterfaceOrientation target = newLandscape
-      ? UIInterfaceOrientationLandscapeRight
-      : UIInterfaceOrientationPortrait;
-      
-      [[UIDevice currentDevice] setValue:@(target) forKey:@"orientation"];
-      [UIViewController attemptRotationToDeviceOrientation];
-      
-      id<UIViewControllerTransitionCoordinator> coordinator = self.fullscreenVC.transitionCoordinator;
-      __weak __typeof__(self) wSelf = self;
-     
-    }
-    return;
-  }
+  if (_isSharing) return;
+  if (_fullscreenVC) return;
+  
   UIViewController *rootVC = [RCTVideoHelper getRootViewController];
   if (!rootVC) return;
   
   _originalOrientation = [RCTVideoHelper currentInterfaceOrientation];
+  
   FullscreenVideoViewController *vc = [FullscreenVideoViewController new];
   vc.modalPresentationStyle = UIModalPresentationFullScreen;
-  vc.view.backgroundColor = self.backgroundColor;
+  vc.view.backgroundColor = UIColor.clearColor;
   
-  if (_fullscreenOrientation) {
-    vc.landscape = [_fullscreenOrientation isEqualToString:@"landscape"];
-  } else {
-    CGSize videoSize = _videoManager.player.currentItem.presentationSize;
-    if (videoSize.width > 0 && videoSize.height > 0) {
-      vc.landscape = (videoSize.width > videoSize.height);
-    } else {
-      vc.landscape = YES;
-    }
-  }
-  
+  // Move player vào VC
   [_containerPoster removeFromSuperview];
   [_container removeFromSuperview];
   
-  _containerPoster.frame = vc.view.bounds;
-  _containerPoster.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-  
-  _container.frame = vc.view.bounds;
-  _container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-  
   [vc.view addSubview:_containerPoster];
   [vc.view addSubview:_container];
-  
+
   _fullscreenVC = vc;
-  __weak __typeof__(self) wSelf = self;
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [rootVC presentViewController:vc animated:NO completion:^{
-      [vc.view setNeedsLayout];
-      [vc.view layoutIfNeeded];
-      if (wSelf.videoManager.playerLayer) {
-        [CATransaction begin];
-        [CATransaction setDisableActions:YES];
-        wSelf.videoManager.playerLayer.frame = wSelf.containerPoster.bounds;
-        [CATransaction commit];
-      }
-    }];
-  });
+  vc.landscape = YES;
+  [rootVC presentViewController:vc animated:NO completion:^{
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [[UIDevice currentDevice] setValue:@(UIInterfaceOrientationLandscapeRight) forKey:@"orientation"];
+      [UIViewController attemptRotationToDeviceOrientation];
+      });
+  }];
 }
 
 - (void)exitFullscreen {

@@ -14,10 +14,9 @@ export default function Home() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
-        fullscreen
         // fullscreenOrientation="portrait"
       >
-        <Text style={{ color: 'white' }}>
+        <Text style={{ color: 'white', width: '100%', backgroundColor: 'red' }}>
           asdasdadádasd ádasd ádsad ádasd ádasd áda đa ấ ádassa asdasdadádasd
           ádasd ádsad ádasd ádasd áda đa ấ ádassa
         </Text>
